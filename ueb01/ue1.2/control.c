@@ -1,28 +1,33 @@
 #include <stdio.h>
-#include <string.h>
-
-#define MAX 1001
 
 int main(void) {
-    int is_prime[MAX];
-    memset(is_prime, 1, sizeof(is_prime));
-    is_prime[0] = 0;
-    is_prime[1] = 0;
+    int prim[1001];
 
-    for (int i = 2; i * i < MAX; i++) {
-        if (is_prime[i]) {
-            for (int j = i * i; j < MAX; j += i)
-                is_prime[j] = 0;
+    // Alles erstmal als prim markieren
+    for (int i = 0; i <= 1000; i++)
+        prim[i] = 1;
+
+    // 0 und 1 sind keine Primzahlen
+    prim[0] = 0;
+    prim[1] = 0;
+
+    // Sieb: Vielfache streichen
+    for (int i = 2; i * i <= 1000; i++) {
+        if (prim[i]) {
+            for (int j = i * i; j <= 1000; j += i)
+                prim[j] = 0;
         }
     }
 
-    for (int i = 0; i < MAX; i++) {
+    // Ausgabe
+    for (int i = 0; i <= 1000; i++) {
         printf("%d", i);
         if (i % 2 == 0)
             printf("x");
-        if (is_prime[i])
+        if (prim[i])
             printf("p");
         printf("\n");
     }
+
     return 0;
 }
