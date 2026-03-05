@@ -1,0 +1,31 @@
+# Claude
+.claude/
+
+# Compiled objects
+*.o
+*.obj
+*.elf
+
+# Executables
+*.out
+a.out
+
+# Libraries
+*.a
+*.so
+*.lib
+*.dll
+
+# Debug
+*.dSYM/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
