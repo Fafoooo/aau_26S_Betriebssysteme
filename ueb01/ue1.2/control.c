@@ -1,25 +1,26 @@
 #include <stdio.h>
+#include <string.h>
 
-int is_prime(int n) {
-    if (n < 2)
-        return 0;
-    if (n == 2)
-        return 1;
-    if (n % 2 == 0)
-        return 0;
-    for (int i = 3; i * i <= n; i += 2) {
-        if (n % i == 0)
-            return 0;
-    }
-    return 1;
-}
+#define MAX 1001
 
 int main(void) {
-    for (int i = 0; i <= 1000; i++) {
+    int is_prime[MAX];
+    memset(is_prime, 1, sizeof(is_prime));
+    is_prime[0] = 0;
+    is_prime[1] = 0;
+
+    for (int i = 2; i * i < MAX; i++) {
+        if (is_prime[i]) {
+            for (int j = i * i; j < MAX; j += i)
+                is_prime[j] = 0;
+        }
+    }
+
+    for (int i = 0; i < MAX; i++) {
         printf("%d", i);
         if (i % 2 == 0)
             printf("x");
-        if (is_prime(i))
+        if (is_prime[i])
             printf("p");
         printf("\n");
     }
