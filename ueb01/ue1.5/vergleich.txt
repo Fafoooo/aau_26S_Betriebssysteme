@@ -1,36 +1,11 @@
-Grundlegende Unterschiede zwischen C und Java
+C und Java sind in vielen Punkten unterschiedlich. C ist eine ältere, kompilierte Programmiersprache und arbeitet sehr nah an der Hardware. Java ist neuer, stärker objektorientiert und läuft normalerweise nicht direkt auf der Hardware, sondern auf der Java Virtual Machine (JVM).
 
-C ist eine prozedurale, kompilierte Programmiersprache, die 1972 von Dennis Ritchie
-entwickelt wurde. Java hingegen ist eine objektorientierte Sprache, die 1995 von Sun
-Microsystems veroeffentlicht wurde und auf einer virtuellen Maschine (JVM) laeuft.
+Ein wichtiger Unterschied ist die Speicherverwaltung. In C muss man Speicher selbst verwalten, zum Beispiel mit malloc() und free(). In Java passiert das automatisch durch den Garbage Collector. Dadurch ist Java oft einfacher und sicherer zu verwenden, während C mehr Kontrolle gibt.
 
-Ein zentraler Unterschied liegt in der Speicherverwaltung. In C muss der Programmierer
-den Speicher manuell mit malloc() und free() verwalten. Java uebernimmt dies
-automatisch durch einen Garbage Collector. Das macht Java-Programme sicherer gegen
-Speicherfehler wie Buffer Overflows oder Memory Leaks, erfordert aber auch mehr
-Laufzeit-Overhead.
+Ein weiterer Unterschied ist die Ausführung. C wird direkt in Maschinencode übersetzt und läuft daher meist sehr schnell. Java wird zuerst in Bytecode übersetzt und dann von der JVM ausgeführt. Dadurch ist Java plattformunabhängiger, weil dasselbe Programm auf vielen Systemen laufen kann.
 
-C wird direkt in Maschinencode kompiliert und laeuft ohne Zwischenschicht auf der
-Hardware. Java-Code wird in Bytecode uebersetzt, der von der JVM interpretiert oder
-zur Laufzeit kompiliert wird (JIT). Dadurch ist Java plattformunabhaengig ("Write once,
-run anywhere"), waehrend C-Programme fuer jede Zielplattform neu kompiliert werden
-muessen.
+C erlaubt direkten Zugriff auf Speicher und Hardware, zum Beispiel mit Pointern. Java versteckt vieles davon, damit Programme leichter und sicherer werden.
 
-C bietet direkten Zugriff auf Speicheradressen ueber Pointer und ermoeglicht
-hardwarenahe Operationen wie Bit-Manipulationen und Zugriff auf I/O-Register. Java
-abstrahiert diese Details bewusst und bietet keine Pointer im klassischen Sinne.
+Java wird oft für große Softwareprojekte, Webanwendungen und Android-Apps verwendet. C wird vor allem in Betriebssystemen, Treibern, Mikrocontrollern und eingebetteten Systemen eingesetzt.
 
-Anwendungsbereiche: Java dominiert in der Webentwicklung, bei Android-Apps und in
-Unternehmenssoftware (Enterprise). C findet vor allem in der Systemprogrammierung
-Anwendung: Betriebssysteme (Linux, Windows-Kernel), eingebettete Systeme,
-Mikrocontroller, Geraetetreiber und sicherheitskritische Echtzeitanwendungen.
-
-Warum C nach ueber 50 Jahren in hardwarenahen Umgebungen dominant bleibt: C erzeugt
-extrem effizienten Maschinencode mit minimalem Overhead. Es gibt keine Laufzeitumgebung,
-keinen Garbage Collector und keinen Interpreter, der zusaetzliche Ressourcen verbraucht.
-Das ist entscheidend fuer Systeme mit begrenztem Speicher und strikten Echtzeitanforderungen.
-Zudem ist C auf praktisch jeder Hardwareplattform verfuegbar und die meisten bestehenden
-Betriebssysteme sowie Bibliotheken sind in C geschrieben, was einen Wechsel zu einer
-anderen Sprache in diesem Bereich extrem aufwendig machen wuerde. Die Naehe zur Hardware
-und die volle Kontrolle ueber Speicher und Ausfuehrung machen C fuer Systemprogrammierung
-nach wie vor unverzichtbar.
+C ist in hardwarenahen Bereichen noch immer dominant, weil es sehr effizient ist, wenig Speicher braucht und ohne große Laufzeitumgebung auskommt. Außerdem gibt es sehr viel bestehende Software und viele Bibliotheken in C. Deshalb ist C dort bis heute besonders wichtig.
