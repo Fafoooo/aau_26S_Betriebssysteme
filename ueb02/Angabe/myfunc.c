@@ -4,5 +4,3 @@
 void myFunc(int *a, int *b);
 
 #endif
-
-//verglechbar mit Interface in Java.

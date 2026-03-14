@@ -1,9 +1,22 @@
-Linux hat sich in den letzten Jahrzehnten zu einem der erfolgreichsten Betriebssysteme der Welt entwickelt - und das liegt nicht nur am Kernel selbst, sondern an einem Zusammenspiel mehrerer Faktoren.
+Die Aufgabe war: Warum ist Linux so dominant? Die Antwort liegt in drei Punkten.
 
-Der Linux-Kernel ist technisch herausragend: Er ist modular aufgebaut, unterstützt eine riesige Bandbreite an Hardware-Architekturen (von Embedded-Systemen bis zu Supercomputern) und wird seit über 30 Jahren kontinuierlich weiterentwickelt. Seine Stabilität und Effizienz machen ihn zur ersten Wahl für Server, Cloud-Infrastruktur und eingebettete Systeme. Über 90% der weltweit größten Supercomputer laufen auf Linux, ebenso wie die überwiegende Mehrheit der Cloud-Server bei AWS, Google und Microsoft Azure.
+Erstens ist der Kernel an sich einfach gut. 
+Er ist modular aufgebaut und läuft auf allem - vom winzigen Embedded-Gerät bis zum Supercomputer. 
+Über 90% der Supercomputer weltweit laufen auf Linux, genauso die ganzen Cloud-Server bei AWS, Google und Azure. 
+Diese Flexibilität hat kein anderes Betriebssystem in dem Ausmaß.
 
-Die Open-Source-Community spielt dabei eine ebenso entscheidende Rolle. Tausende Entwickler weltweit - darunter Mitarbeiter von Google, Red Hat, Intel und Microsoft - tragen regelmäßig Code bei. Dieses kollaborative Modell sorgt für schnelle Fehlerbehebungen, ständige Innovation und eine Transparenz, die proprietäre Systeme nicht bieten können. Unternehmen können den Kernel an ihre Bedürfnisse anpassen, ohne Lizenzgebühren zu zahlen.
+Zweitens spielt die Open-Source-Community eine riesige Rolle. 
+Hinter Linux sitzen Entwickler von Google, Red Hat, Intel und sogar Microsoft dran. 
+Bugs werden schnell gefixt, es gibt ständig neue Features, und es kostet nichts. 
+Kein Unternehmen muss Lizenzgebühren zahlen, und jeder kann den Kernel an seine Bedürfnisse anpassen. 
+Das ist ein enormer Vorteil gegenüber proprietären Systemen wie Windows, wo man auf den Hersteller angewiesen ist.
 
-Android ist das beste Beispiel für diese Dominanz: Als Linux-basiertes Mobilbetriebssystem läuft es auf über 70% aller Smartphones weltweit. Google hat den Linux-Kernel genommen, eine eigene Userspace-Schicht darübergelegt und damit den Mobilmarkt erobert. Ohne die Flexibilität und Lizenzfreiheit von Linux wäre das kaum möglich gewesen.
+Drittens zeigt Android am besten, was mit Linux möglich ist. 
+Android ist im Kern einfach Linux mit einer Google-Schicht obendrauf. 
+Über 70% aller Smartphones weltweit laufen damit. 
+Google hat den Linux-Kernel genommen, eine eigene Userspace-Schicht darübergelegt und damit den gesamten Mobilmarkt erobert. 
+Ohne die freie Lizenz hätte Google das so nie machen können.
 
-Zusammengefasst: Linux ist erfolgreich, weil der Kernel technisch erstklassig ist UND weil das Open-Source-Modell eine beispiellose Anpassungsfähigkeit und Innovationsgeschwindigkeit ermöglicht. Die Kombination aus freier Lizenz (GPL), Community-Engagement und Unterstützung durch große Unternehmen hat Linux in nahezu jeden Bereich der IT gebracht - vom Smartphone in der Hosentasche bis zum Server, der diese Nachricht ausliefert.
+Am Ende ist es also nicht nur der Kernel und nicht nur die Community, sondern beides. 
+Die Kombination aus technischer Qualität, freier Lizenz und einer aktiven Entwicklergemeinschaft hat Linux in praktisch jeden Bereich der IT gebracht, 
+vom Smartphone bis zum Rechenzentrum.

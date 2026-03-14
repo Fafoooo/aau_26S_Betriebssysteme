@@ -1,72 +1,67 @@
-/*
- * Ü 2.2 - Pointer verstehen
- *
- * Originalcode (rekonstruiert aus Angabe) mit Korrekturen und Kommentaren.
- */
+// Ü 2.2 - Pointer verstehen
 
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(void) {
+int main(int argc, char* argv[])
+{
+    int  a = 4;             // Variable a mit Wert 4
+    int* b = NULL;          // Pointer b, zeigt noch nirgends hin
 
-    /* --- Variablen auf dem Stack --- */
-    int a = 5;                      // int-Variable a wird mit 5 initialisiert (Stack)
-    int b = 10;                     // int-Variable b wird mit 10 initialisiert (Stack)
+    // Gibt a=4, Adresse von a, und nochmal 4 aus (*(&a) = Wert an Adresse von a)
+    printf("\n0: a=%d &a=%p *(&a)=%d", a, &a, *(&a));
+    // Gibt b=0x0 (NULL) und die Adresse von b selbst aus
+    printf("\n0: b=%p &b=%p\n", b, &b);
 
-    /* --- Pointer auf Stack-Variablen --- */
-    int *pa = &a;                   // Pointer pa zeigt auf a → *pa == 5
-    int *pb = &b;                   // Pointer pb zeigt auf b → *pb == 10
+    // Reserviert Platz fuer 4 ints auf dem Heap. b und c zeigen beide drauf.
+    int* c = b = (int*) malloc(sizeof(int) * 4);
+    *b         = 10;        // Schreibt 10 ins erste Element -> [10, ?, ?, ?]
 
-    printf("a = %d\n", a);         // Ausgabe: a = 5
-    printf("b = %d\n", b);         // Ausgabe: b = 10
-    printf("*pa = %d\n", *pa);     // Dereferenzierung: Ausgabe: *pa = 5
-    printf("*pb = %d\n", *pb);     // Dereferenzierung: Ausgabe: *pb = 10
+    // b und c haben dieselbe Adresse, Wert ist 10
+    printf("\n1: b=%p *b=%d &b=%p", b, *b, &b);
+    printf("\n1: c=%p *c=%d &c=%p\n", c, *c, &c);
 
-    /* --- Pointer-Arithmetik --- */
-    *pa = 20;                       // Wert von a wird über pa auf 20 geändert
-    printf("a = %d\n", a);         // Ausgabe: a = 20 (a wurde via Pointer verändert)
+    b[2] = 20;              // Drittes Element = 20 -> [10, ?, 20, ?]
+    b++;                     // b rueckt eins weiter, zeigt jetzt auf zweites Element
+    *(b + 2) = 30;          // b+2 = viertes Element = 30 -> [10, ?, 20, 30]
+    *(b--)   = 40;          // Schreibt 40 ins zweite Element, dann b zurueck -> [10, 40, 20, 30]
 
-    /* --- Speicher auf dem Heap --- */
-    /*
-     * a) Die Zeile "int *pc = (int *)malloc(sizeof(int));" muss VOR der
-     *    ersten Verwendung von pc stehen. Steht sie danach (z.B. nach *pc = 42),
-     *    greift man auf nicht allokierten Speicher zu → Absturz (Segfault).
-     */
-    int *pc = (int *)malloc(sizeof(int));  // Speicher für einen int auf dem Heap reservieren
-    *pc = 42;                       // Wert 42 in den Heap-Speicher schreiben
-    printf("*pc = %d\n", *pc);     // Ausgabe: *pc = 42
+    // Geht alle 4 Elemente durch und gibt sie aus: 10, 40, 20, 30
+    for (int i = 0, *pi = c; i < 4; ++i, ++pi)
+    {
+        printf("\n2: b[%ld]=%d (addr=%p)", pi - c, *pi, pi);
+    }
+    printf("\n");
 
-    /* --- sizeof --- */
-    /*
-     * c) sizeof(int) gibt die Größe eines int-Werts (typisch 4 Bytes).
-     *    sizeof(int*) gibt die Größe eines Pointers (typisch 8 Bytes auf 64-Bit).
-     *    Auf 32-Bit wäre sizeof(int*) = 4 Bytes.
-     *    → Die Werte lassen auf eine 64-Bit-Architektur schließen (x86_64/ARM64).
-     */
-    printf("sizeof(int) = %zu\n", sizeof(int));    // Ausgabe: 4
-    printf("sizeof(int*) = %zu\n", sizeof(int *));  // Ausgabe: 8 (auf 64-Bit)
+    // a) FIX: Im Original stand b = &a VOR free(b), was einen Absturz verursacht,
+    //    weil free() nur Heap-Speicher freigeben darf, nicht Stack. Zeilen getauscht:
+    free(b);                 // Heap-Speicher freigeben (b zeigt noch auf Heap)
+    b = &a;                  // b zeigt jetzt auf a (Stack)
 
-    /* Heap-Speicher freigeben */
-    free(pc);
+    // b zeigt auf a, also *b = 4
+    printf("\n3: a=%d &a=%p *(&a)=%d", a, &a, *(&a));
+    printf("\n3: b=%p *b=%d &b=%p\n", b, *b, &b);
 
-    /*
-     * d) Stack vs. Heap:
-     *    - Stack: Automatisch verwalteter Speicher für lokale Variablen.
-     *      Wird beim Betreten einer Funktion allokiert und beim Verlassen
-     *      automatisch freigegeben. Schnell, aber begrenzt (wenige MB).
-     *    - Heap: Dynamisch verwalteter Speicher. Muss explizit mit malloc()
-     *      angefordert und mit free() freigegeben werden. Größer, aber langsamer.
-     *    - malloc(size_t n) reserviert n Bytes auf dem Heap und gibt einen
-     *      void-Pointer auf den Anfang des Blocks zurück. Bei Fehler: NULL.
-     *
-     * e) Die Ausgaben sind grundsätzlich konsistent für die Stack-Variablen
-     *    (a, b, pa, pb), da diese deterministisch initialisiert werden.
-     *    Die Adressen selbst (printf("%p", ...)) können sich zwischen Aufrufen
-     *    ändern, da moderne Betriebssysteme ASLR (Address Space Layout
-     *    Randomization) verwenden - eine Sicherheitsmaßnahme, die die
-     *    Speicheradressen bei jedem Programmstart zufällig verschiebt.
-     *    Die WERTE bleiben jedoch gleich, da sie explizit gesetzt werden.
-     */
+    // Gibt Groesse von int (4 Bytes) und Groesse von Pointer (8 Bytes) aus
+    printf("\n4: size(int)=%zu, size(int*)=%zu\n", sizeof(*b), sizeof(b));
 
-    return 0;
+
+    // c) sizeof(int) gibt 4 aus - ein int braucht 4 Bytes (32 Bit).
+    //    sizeof(int*) gibt 8 aus - ein Pointer braucht 8 Bytes (64 Bit).
+    //    Ein Pointer speichert eine Speicheradresse. Auf einem 64-Bit-System
+    //    sind Adressen 64 Bit lang, daher 8 Bytes pro Pointer.
+    //    Auf einem 32-Bit-System waeren es nur 4 Bytes.
+    //    -> sizeof(int*) = 8 bedeutet: 64-Bit-Architektur.
+
+    // d) Stack: Hier landen lokale Variablen (z.B. int a = 4). Der Speicher wird
+    //    automatisch freigegeben wenn die Funktion endet. Schnell, aber begrenzt.
+    //    Heap: Hier holt man sich Speicher selbst mit malloc(). Man muss ihn auch
+    //    selbst wieder freigeben mit free(). Grösser als der Stack, aber langsamer.
+    //    malloc(n) reserviert n Bytes auf dem Heap und gibt einen Pointer drauf zurück.
+    //    Wenn kein Platz mehr da ist, gibt malloc NULL zurück.
+
+    // e) Werte (4, 10, 40, 20, 30) sind jedes Mal gleich, weil wir sie selbst setzen.
+    //    Die Adressen ändern sich aber bei jedem Aufruf.
+
+    return EXIT_SUCCESS;
 }
