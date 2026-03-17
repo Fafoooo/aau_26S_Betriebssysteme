@@ -1,0 +1,31 @@
+Ü 3.2b - Warum stürzt recursive.c ab?
+
+PROBLEM:
+  foo() ruft sich selbst 10.000 Mal auf (Rekursion).
+  Bei jedem Aufruf wird ein char-Array mit 2000 Bytes auf dem Stack angelegt.
+  -> 10.000 Aufrufe * ~2016 Bytes (2000 + Overhead) = ~20 MB Stackverbrauch.
+  Die Standard-Stackgrösse beträgt aber nur 8 MB (ulimit -s zeigt 8192 KB).
+  -> Stack Overflow -> Segmentation Fault (SIGSEGV).
+
+LOESUNG 1 - ulimit:
+  ulimit -s unlimited    (Stack unbegrenzt setzen)
+  ./recursive            (laeuft jetzt durch)
+
+  Oder konkret:
+  ulimit -s 40960        (40 MB Stack, reicht fuer 10.000 * 2 KB)
+  ./recursive
+
+LOESUNG 2 - Compiler-Flag:
+  gcc -Wl,-z,stacksize=41943040 -o recursive recursive.c
+  (Setzt Stack auf 40 MB direkt im Binary)
+
+  Alternativ mit Linker-Script:
+  gcc -Wl,--stack,41943040 -o recursive recursive.c
+
+LOESUNG 3 - Compiler-Optimierung:
+  gcc -O2 -o recursive recursive.c
+  Mit Optimierung kann der Compiler die Tail-Rekursion eventuell
+  in eine Schleife umwandeln (Tail Call Optimization), was den
+  Stack-Verbrauch auf ein Minimum reduziert. Allerdings ist foo()
+  hier keine echte Tail-Rekursion wegen des lokalen Arrays,
+  daher funktioniert das nicht garantiert.
