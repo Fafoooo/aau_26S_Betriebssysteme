@@ -1,46 +1,35 @@
 // Ü 3.3b - Maximale Groesse eines Integer-Arrays finden
 //
-// Strategie: Mit grossem Block anfangen, bei Fehler halbieren,
-// dann per Binaersuche die genaue Grenze finden.
+// Versucht immer groessere Arrays zu allokieren bis malloc fehlschlaegt.
+// Binaere Suche fuer die exakte Grenze.
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 
 int main(int argc, char* argv[])
 {
-    size_t low = 0;
-    size_t high = SIZE_MAX / sizeof(int);  // Theoretisches Maximum
-    size_t best = 0;
-    int *ptr;
+    // Schritt 1: Groessenordnung finden (verdoppeln bis malloc scheitert)
+    size_t low = 1;
+    size_t high = 1;
 
-    printf("Suche maximale int-Array-Groesse...\n\n");
-
-    // Erst mal eine obere Grenze finden die fehlschlaegt
-    size_t test = 1;
-    while (test < high)
+    while (1)
     {
-        ptr = (int*) malloc(test * sizeof(int));
-        if (ptr == NULL)
-        {
-            high = test;
+        int *p = (int*) malloc(sizeof(int) * high);
+        if (p == NULL)
             break;
-        }
-        free(ptr);
-        best = test;
-        low = test;
-        test *= 2;
+        free(p);
+        low = high;
+        high *= 2;
     }
 
-    // Binaersuche zwischen low und high
+    // Schritt 2: Binaere Suche zwischen low und high
     while (low + 1 < high)
     {
         size_t mid = low + (high - low) / 2;
-        ptr = (int*) malloc(mid * sizeof(int));
-        if (ptr != NULL)
+        int *p = (int*) malloc(sizeof(int) * mid);
+        if (p != NULL)
         {
-            free(ptr);
-            best = mid;
+            free(p);
             low = mid;
         }
         else
@@ -49,10 +38,9 @@ int main(int argc, char* argv[])
         }
     }
 
-    printf("Maximale Array-Groesse: %zu Elemente\n", best);
-    printf("Das entspricht:         %zu Bytes (%.2f GB)\n",
-           best * sizeof(int),
-           (double)(best * sizeof(int)) / (1024.0 * 1024.0 * 1024.0));
+    printf("Maximale Array-Groesse: %zu Elemente\n", low);
+    printf("Das entspricht ca. %.2f GB\n",
+           (double)(low * sizeof(int)) / (1024.0 * 1024.0 * 1024.0));
 
     return 0;
 }

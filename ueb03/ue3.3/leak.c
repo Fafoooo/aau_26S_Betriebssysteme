@@ -1,45 +1,39 @@
-// Ü 3.3a - Memory Management: Memory Leak
+// Ü 3.3a - Memory Management: Speicherleck
 //
-// Endlosschleife mit malloc -> beobachten mit top/htop
-//
-// Loesung 1: Error-Handling -> pruefen ob malloc NULL zurueckgibt
-// Loesung 2: Speicherfreigabe -> free() nach Verwendung
-// Hier: beide Ansaetze implementiert
+// Zeigt was passiert wenn man in einer Endlosschleife malloc() aufruft
+// ohne free(). Zwei Loesungsansaetze implementiert:
+//   1) Error-Handling: Pruefen ob malloc NULL zurueckgibt
+//   2) Speicherfreigabe: free() nach jeder Nutzung
 
 #include <stdio.h>
 #include <stdlib.h>
 
 int main(int argc, char* argv[])
 {
-    unsigned long long count = 0;
-    int *ptr;
-
-    printf("Memory Leak Demo (mit Fix)\n");
-    printf("Beobachten mit: top -p $(pgrep leak)\n\n");
+    unsigned long count = 0;
 
     while (1)
     {
-        // Speicher allokieren
-        ptr = (int*) malloc(sizeof(int));
+        int *p = (int*) malloc(sizeof(int) * 1024);  // 4 KB pro Iteration
 
-        // Loesung 1: Error-Handling - pruefen ob malloc erfolgreich war
-        if (ptr == NULL)
+        // Loesung 1: Error-Handling - abbrechen wenn kein Speicher mehr da
+        if (p == NULL)
         {
-            printf("malloc fehlgeschlagen nach %llu Allokationen!\n", count);
-            printf("Kein Speicher mehr verfuegbar.\n");
+            printf("malloc fehlgeschlagen nach %lu Allokationen\n", count);
+            printf("Das waren ca. %lu MB\n", (count * sizeof(int) * 1024) / (1024 * 1024));
             break;
         }
 
-        *ptr = 42;
+        *p = 42;  // Speicher benutzen
         count++;
 
-        // Loesung 2: Speicherfreigabe - free() nach Verwendung
-        // Ohne free() wuerde der Speicherverbrauch endlos steigen (Memory Leak)
-        free(ptr);
+        // Loesung 2: Speicher sofort wieder freigeben (kein Leak)
+        free(p);
 
-        if (count % 10000000 == 0)
+        // Alle 1 Million Iterationen Statusmeldung
+        if (count % 1000000 == 0)
         {
-            printf("%llu Allokationen (Speicher stabil dank free)\n", count);
+            printf("%lu Millionen Allokationen (kein Leak dank free)\n", count / 1000000);
         }
     }
 

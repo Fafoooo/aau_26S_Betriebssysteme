@@ -1,0 +1,40 @@
+Ü 3.4 - Linux verstehen 2
+
+1) Dateitypen in Linux:
+   Linux unterscheidet folgende Dateitypen (sichtbar mit ls -l, erstes Zeichen):
+     -  Reguläre Datei (normaler Text, Binary, ...)
+     d  Verzeichnis (Directory)
+     l  Symbolischer Link (Symlink, Verweis auf andere Datei)
+     c  Character Device (zeichenorientiertes Gerät, z.B. /dev/tty)
+     b  Block Device (blockorientiertes Gerät, z.B. /dev/sda)
+     p  Named Pipe (FIFO, für Interprozesskommunikation)
+     s  Socket (für Netzwerkkommunikation zwischen Prozessen)
+
+   Dateitypen werden NICHT über die Dateiendung bestimmt (wie bei Windows),
+   sondern über Metadaten im Dateisystem (Inode). Der Befehl "file" zeigt
+   den tatsächlichen Typ anhand des Inhalts an (Magic Bytes).
+
+
+2) ls-Ausgabe nur mit Monat:
+   ls -al --time-style=+"%b" | awk '{print $6, $7}'
+
+   Erklärung:
+   - --time-style=+"%b" formatiert das Datum so, dass nur der Monatsname
+     (abbreviated, z.B. Dec, Mar) angezeigt wird
+   - awk '{print $6, $7}' gibt nur die Spalten mit Monat und Dateiname aus
+
+   Alternative:
+   ls -al | awk '{print $6, $NF}'
+
+
+3) 1-GB-Datei mit Zufallszahlen:
+   dd if=/dev/urandom of=random.bin bs=1M count=1024
+
+   Erklärung:
+   - /dev/urandom ist eine spezielle Datei die vom Kernel bereitgestellt wird
+     und kryptografisch sichere Zufallszahlen liefert
+   - bs=1M: Blockgrösse 1 Megabyte (effizientes Schreiben)
+   - count=1024: 1024 Blöcke à 1 MB = 1 GB
+
+   Alternative mit OpenSSL:
+   openssl rand -out random.bin $((1024*1024*1024))

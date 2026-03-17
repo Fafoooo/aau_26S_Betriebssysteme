@@ -18,7 +18,7 @@ bool isEven(int value)
     return value % 2 == 0;
 }
 
-// 1) isGreaterThanPrevious: prueft ob Zahl groesser als die vorherige ist
+// 1) isGreaterThanPrevious: prueft ob aktueller Wert groesser als Vorgaenger
 bool isGreaterThanPrevious(int value)
 {
     bool result = value > previous;
@@ -40,20 +40,20 @@ unsigned count_if(int array[], unsigned size, IntFunction func)
     return count;
 }
 
+// 3) Testprogramm
 int main(int argc, char* argv[])
 {
-    // 3) Test-Array aus der Angabe
     int values[10] = {55, 12, 98, 55, 15, 8, 52, 71, 12, 11};
 
-    // count_if mit isEven aufrufen
     unsigned even_count = count_if(values, 10, isEven);
 
-    // previous zuruecksetzen fuer isGreaterThanPrevious
+    // previous muss vor dem zweiten Aufruf zurueckgesetzt werden
     previous = 0;
     unsigned greater_count = count_if(values, 10, isGreaterThanPrevious);
 
-    // Erwartetes Ergebnis: isEven: 5   isGreaterThanPrevious: 4
     printf("isEven: %u\t\tisGreaterThanPrevious: %u\n", even_count, greater_count);
+
+    // Erwartetes Ergebnis: isEven: 5    isGreaterThanPrevious: 4
 
     return 0;
 }
