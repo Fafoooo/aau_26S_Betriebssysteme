@@ -1,12 +1,12 @@
-Ü 3.2b - Warum stuerzt recursive.c ab?
+Ü 3.2b - Warum stürzt recursive.c ab?
 
 foo() ruft sich selbst 10.000 Mal auf. Jeder Aufruf legt ein 2000-Byte-Array
 auf dem Stack an. 10.000 * ~2 KB = ~20 MB, aber der Standard-Stack ist nur
-8 MB gross (ulimit -s zeigt 8192 KB). -> Stack Overflow -> Segmentation Fault.
+8 MB groß (ulimit -s zeigt 8192 KB). -> Stack Overflow -> Segmentation Fault.
 
-Loesung mit ulimit:
+Lösung mit ulimit:
   ulimit -s unlimited
   ./recursive
 
-Loesung ueber Compiler (Stack auf 40 MB setzen):
+Lösung über Compiler (Stack auf 40 MB setzen):
   gcc -Wl,-z,stacksize=41943040 -o recursive recursive.c

@@ -1,6 +1,6 @@
 // Ü 3.3a - Speicherleck
-// Loesungsansaetze: 1) Error-Handling (malloc auf NULL pruefen)
-//                   2) Speicherfreigabe (free nach Benutzung)
+// Lösungsansätze: 1) Error-Handling (malloc auf NULL prüfen)
+//                 2) Speicherfreigabe (free nach Benutzung)
 // Hier implementiert: Error-Handling
 
 #include <stdio.h>
