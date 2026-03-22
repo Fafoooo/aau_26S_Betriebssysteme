@@ -1,20 +1,16 @@
-// Ü 3.3b - Maximale Groesse eines Integer-Arrays finden
-//
-// Versucht immer groessere Arrays zu allokieren bis malloc fehlschlaegt.
-// Binaere Suche fuer die exakte Grenze.
+// Ü 3.3b - Maximale Groesse eines Integer-Arrays
 
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(int argc, char* argv[])
+int main(void)
 {
-    // Schritt 1: Groessenordnung finden (verdoppeln bis malloc scheitert)
-    size_t low = 1;
-    size_t high = 1;
+    size_t low = 1, high = 1;
 
+    // Obere Grenze finden
     while (1)
     {
-        int *p = (int*) malloc(sizeof(int) * high);
+        int *p = malloc(sizeof(int) * high);
         if (p == NULL)
             break;
         free(p);
@@ -22,20 +18,18 @@ int main(int argc, char* argv[])
         high *= 2;
     }
 
-    // Schritt 2: Binaere Suche zwischen low und high
+    // Binaere Suche
     while (low + 1 < high)
     {
         size_t mid = low + (high - low) / 2;
-        int *p = (int*) malloc(sizeof(int) * mid);
+        int *p = malloc(sizeof(int) * mid);
         if (p != NULL)
         {
             free(p);
             low = mid;
         }
         else
-        {
             high = mid;
-        }
     }
 
     printf("Maximale Array-Groesse: %zu Elemente\n", low);

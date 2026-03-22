@@ -1,50 +1,17 @@
 Ü 3.4 - Linux verstehen 2
 
-
 1) Dateitypen in Linux:
+   Linux kennt 7 Dateitypen, erkennbar am ersten Zeichen von ls -l:
+     -  Regulaere Datei
+     d  Verzeichnis
+     l  Symbolischer Link
+     c  Character Device (z.B. /dev/tty)
+     b  Block Device (z.B. /dev/sda)
+     p  Named Pipe (FIFO)
+     s  Socket
 
-Linux kennt 7 Dateitypen, erkennbar am ersten Zeichen von ls -l:
-
-  -   Reguläre Datei (Text, Binaer, etc.)
-  d   Verzeichnis (Directory)
-  l   Symbolischer Link (Symlink, Verknuepfung)
-  c   Character Device (z.B. /dev/tty, zeichenweise I/O)
-  b   Block Device (z.B. /dev/sda, blockweise I/O)
-  p   Named Pipe (FIFO, Interprozesskommunikation)
-  s   Socket (Netzwerk-/IPC-Kommunikation)
-
-Beispiel: drwxr-xr-x -> d = Verzeichnis
-          -rw-r--r-- -> - = regulaere Datei
-          lrwxrwxrwx -> l = Symlink
-
-
-2) ls-Ausgabe mit nur dem Monat:
-
-  ls -la --time-style="+%b" | awk '{print $6, $7}'
-
-Erklaerung:
-  --time-style="+%b"   Zeigt nur den Monatsnamen (Kurzform: Jan, Feb, Mar, ...)
-  awk '{print $6, $7}' Gibt nur Spalte 6 (Monat) und 7 (Dateiname) aus
-
-Alternative:
-  ls -la | awk '{print $6, $NF}'
-
-Oder mit stat:
-  for f in .* *; do echo "$(stat --format='%y' "$f" | cut -d'-' -f2 | 
-    xargs -I{} date -d "2026-{}-01" +%b) $f"; done
-
+2) ls-Ausgabe nur mit Monat:
+   ls -la --time-style="+%b" | awk '{print $6, $7}'
 
 3) 1-GB-Datei mit Zufallszahlen:
-
-  dd if=/dev/urandom of=random.bin bs=1M count=1024
-
-Erklaerung:
-  /dev/urandom   Quelle fuer kryptographisch sichere Zufallszahlen
-  bs=1M          Blockgroesse 1 Megabyte
-  count=1024     1024 Bloecke = 1024 MB = 1 GB
-
-Alternative mit head:
-  head -c 1G /dev/urandom > random.bin
-
-Alternative mit openssl:
-  openssl rand -out random.bin $((1024*1024*1024))
+   dd if=/dev/urandom of=random.bin bs=1M count=1024
