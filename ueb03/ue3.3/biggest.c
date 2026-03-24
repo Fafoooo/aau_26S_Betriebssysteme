@@ -3,13 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(void)
-{
+int main(void) {
     size_t low = 1, high = 1;
 
     // Obere Grenze finden (verdoppeln bis malloc scheitert)
-    while (1)
-    {
+    while (1) {
         int *p = malloc(sizeof(int) * high);
         if (p == NULL)
             break;
@@ -19,17 +17,15 @@ int main(void)
     }
 
     // Binäre Suche
-    while (low + 1 < high)
-    {
+    while (low + 1 < high) {
         size_t mid = low + (high - low) / 2;
         int *p = malloc(sizeof(int) * mid);
-        if (p != NULL)
-        {
+        if (p != NULL) {
             free(p);
             low = mid;
-        }
-        else
+        } else {
             high = mid;
+        }
     }
 
     printf("Maximale Array-Größe: %zu Elemente\n", low);

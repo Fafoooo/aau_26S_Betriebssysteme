@@ -3,8 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int main(void)
-{
+int main(void) {
     // a) ASCII-Tabelle
     printf("Dez\tChar\n");
     printf("----------\n");
@@ -21,8 +20,7 @@ int main(void)
     if (len > 0 && input[len - 1] == '\n')
         input[len - 1] = '\0';
 
-    for (int i = 0; input[i] != '\0'; i++)
-    {
+    for (int i = 0; input[i] != '\0'; i++) {
         if (input[i] >= 'A' && input[i] <= 'Z')
             input[i] += 'a' - 'A';
     }

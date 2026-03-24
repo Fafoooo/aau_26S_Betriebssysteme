@@ -6,15 +6,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(void)
-{
+int main(void) {
     unsigned long count = 0;
 
-    while (1)
-    {
+    while (1) {
         int *p = malloc(sizeof(int) * 1024);
-        if (p == NULL)
-        {
+        if (p == NULL) {
             printf("malloc fehlgeschlagen nach %lu Allokationen\n", count);
             break;
         }

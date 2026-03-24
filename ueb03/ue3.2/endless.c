@@ -3,8 +3,7 @@
 
 #include <stdio.h>
 
-int main(void)
-{
+int main(void) {
     printf("Endlosschleife gestartet...\n");
     while (1)
         ;
