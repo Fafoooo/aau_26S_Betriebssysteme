@@ -1,0 +1,43 @@
+RECURSIVE.C CRASH ANALYSIS / REKURSIVE ABSTURZ-ANALYSE
+====================================================
+
+PROBLEM DESCRIPTION:
+Das recursive.c Programm stürzt mit einem Segmentation Fault ab aufgrund von Stack Overflow.
+
+TECHNICAL ROOT CAUSE:
+- Function calls: 10,000 recursive calls
+- Local array per call: 2,000 bytes
+- Total stack usage: 10,000 × 2,000 = 20,000,000 bytes (≈ 20 MB)
+- Default Linux stack limit: typically 8 MB (8,388,608 bytes)
+- Result: 20 MB > 8 MB → Stack Overflow → SIGSEGV
+
+STACK FRAME COMPOSITION:
+Each recursive call adds to stack:
+- Local variables (2KB array)
+- Return address (8 bytes on x64)
+- Function parameters
+- Register save area
+- Stack frame overhead
+
+SOLUTION OPTIONS / LÖSUNGSANSÄTZE:
+
+1. INCREASE STACK LIMIT (Recommended):
+   ulimit -s unlimited
+   → Removes stack size restriction
+
+2. COMPILER-BASED STACK INCREASE:
+   gcc -Wl,--stack,33554432 recursive.c -o recursive
+   → Sets stack to 32 MB at link time
+
+3. RUNTIME STACK CONTROL:
+   setrlimit(RLIMIT_STACK, &rlim) in code
+
+4. ALGORITHMIC FIXES:
+   - Reduce recursion depth (< 4000 calls)
+   - Smaller local arrays (< 2000 bytes)  
+   - Use heap allocation (malloc/free)
+   - Convert to iterative approach
+
+BEST PRACTICE:
+Use ulimit -s unlimited before execution for immediate fix.
+For production: redesign to avoid deep recursion.

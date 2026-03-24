@@ -1,0 +1,16 @@
+3.4 Linux
+
+1) Dateitypen (erstes Zeichen bei ls -l):
+   -  regular file
+   d  directory
+   l  symbolic link
+   c  character device
+   b  block device
+   p  named pipe
+   s  socket
+
+2) Nur Monat anzeigen:
+   ls -la --time-style="+%b" | awk '{print $6, $7}'
+
+3) 1 GB Zufallsdatei:
+   dd if=/dev/urandom of=random.bin bs=1M count=1024

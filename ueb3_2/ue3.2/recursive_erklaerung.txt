@@ -1,0 +1,12 @@
+Why recursive.c crashes:
+
+Stack overflow. 10000 calls * 2000 bytes = 20MB. Default stack = 8MB.
+20MB > 8MB = crash.
+
+Fixes:
+1. ulimit -s unlimited
+2. gcc with larger stack: gcc -Wl,--stack,33554432 recursive.c
+3. Use heap instead of stack (malloc/free)
+4. Reduce recursion depth or array size
+
+Best: ulimit -s unlimited before running.

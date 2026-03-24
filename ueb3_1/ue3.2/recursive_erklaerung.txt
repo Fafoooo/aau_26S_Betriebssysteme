@@ -1,0 +1,40 @@
+Erklärung: Warum stürzt recursive.c ab und wie kann man es beheben?
+
+PROBLEM:
+Das Programm recursive.c stürzt mit einem Segmentierungsfehler (Segmentation Fault) ab, weil der Stack-Speicher überläuft.
+
+DETAILLIERTE ANALYSE:
+- Das Programm macht 10.000 rekursive Aufrufe
+- Bei jedem Aufruf wird ein Array von 2.000 Bytes auf dem Stack allokiert
+- Gesamter Stack-Verbrauch: 10.000 × 2.000 Bytes = 20.000.000 Bytes ≈ 20 MB
+- Der Standard-Stack in Linux ist normalerweise auf 8 MB begrenzt
+- Da 20 MB > 8 MB ist, läuft der Stack über und das Programm stürzt ab
+
+STACK-OVERFLOW MECHANISMUS:
+Der Stack wächst bei jedem Funktionsaufruf und enthält:
+- Lokale Variablen (hier das 2000-Byte Array)
+- Rücksprungadresse
+- Funktionsparameter
+- Verwaltungsinformationen
+
+Wenn der verfügbare Stack-Speicher erschöpft ist, schreibt das Programm in 
+unerlaubte Speicherbereiche und verursacht einen Segmentation Fault.
+
+LÖSUNGSMÖGLICHKEITEN:
+
+1. Stack-Limit erhöhen:
+   ulimit -s unlimited
+   (Entfernt die Stack-Größenbeschränkung)
+
+2. Stack-Größe beim Kompilieren setzen:
+   gcc -Wl,--stack,33554432 recursive.c -o recursive
+   (Setzt Stack auf 32 MB)
+
+3. Programmänderung:
+   - Kleinere Arrays verwenden
+   - Arrays auf dem Heap statt Stack allokieren (malloc/free)
+   - Iterative statt rekursive Lösung implementieren
+
+EMPFEHLUNG:
+Am besten ist "ulimit -s unlimited" vor dem Programmstart, da es die 
+einfachste und direkteste Lösung ist.

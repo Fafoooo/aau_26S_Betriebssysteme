@@ -1,0 +1,23 @@
+aufgabe 3.4 linux
+
+frage 1: dateitypen in linux
+wenn man ls -l macht sieht man am anfang ein zeichen das den typ anzeigt:
+- = normale datei
+d = ordner (directory)
+l = link (symbolischer link)
+c = character device (zb terminal)
+b = block device (zb festplatte)
+p = pipe
+s = socket
+also insgesamt 7 verschiedene typen
+
+frage 2: nur monat anzeigen bei ls
+ls -la --time-style="+%b" | awk '{print $6, $7}'
+das --time-style sagt wie das datum formatiert wird, %b ist der monatsname (zb Mar, Dec)
+awk nimmt dann nur die spalte mit monat und dateiname
+
+frage 3: 1 gb datei mit zufallszahlen
+dd if=/dev/urandom of=random.bin bs=1M count=1024
+/dev/urandom ist eine spezielle datei die zufallszahlen liefert
+bs=1M heisst blockgroesse 1 megabyte
+count=1024 heisst 1024 bloecke also 1024 MB = 1 GB

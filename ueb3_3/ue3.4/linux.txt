@@ -1,0 +1,56 @@
+LINUX BETRIEBSSYSTEM - Fragen und Antworten
+==========================================
+
+FRAGE 1: Linux File Types / Linux Dateitypen
+--------------------------------------------
+
+Das Linux-Dateisystem unterstützt 7 verschiedene Dateitypen, die im ersten 
+Zeichen der ls -l Ausgabe erkennbar sind:
+
+TYPE | SYMBOL | DESCRIPTION / BESCHREIBUNG
+-----|--------|---------------------------
+Regular File | - | Standard files (text, binary, etc.) / Normale Dateien
+Directory | d | Folders containing other files / Verzeichnisse
+Symbolic Link | l | Soft links to other files/dirs / Symbolische Verknüpfungen  
+Character Device | c | Character-based devices (terminals) / Zeichen-Geräte
+Block Device | b | Block-based devices (disks) / Block-Geräte
+Named Pipe/FIFO | p | Inter-process communication / Benannte Pipes
+Unix Socket | s | Local socket communication / Unix Domain Sockets
+
+Beispiel:
+-rw-r--r-- 1 user group  1024 Jan 15 10:30 file.txt     (regular file)
+drwxr-xr-x 2 user group  4096 Jan 15 10:31 directory/   (directory)
+
+FRAGE 2: ls command showing only month / ls-Befehl nur Monat
+-----------------------------------------------------------
+
+COMMAND: ls -la --time-style="+%b" | awk '{print $6, $7}'
+
+EXPLANATION / ERKLÄRUNG:
+- ls -la: List all files with detailed information
+- --time-style="+%b": Format date to show only month name (%b)
+- | awk '{print $6, $7}': Pipe to awk, print columns 6 and 7 (month + filename)
+
+OUTPUT EXAMPLE:
+Jan file1.txt
+Feb file2.txt
+Mar directory/
+
+FRAGE 3: Generate 1GB random file / 1GB Zufallsdatei erstellen
+------------------------------------------------------------
+
+COMMAND: dd if=/dev/urandom of=random.bin bs=1M count=1024
+
+PARAMETER BREAKDOWN:
+- dd: Data duplicator utility
+- if=/dev/urandom: Input file - pseudo-random number generator
+- of=random.bin: Output file name
+- bs=1M: Block size = 1 Megabyte per operation
+- count=1024: Number of blocks = 1024 × 1MB = 1024MB = 1GB
+
+ALTERNATIVE (cryptographically stronger but slower):
+dd if=/dev/random of=random.bin bs=1M count=1024
+
+VERIFICATION:
+ls -lh random.bin
+# Should show: -rw-r--r-- 1 user group 1.0G ...

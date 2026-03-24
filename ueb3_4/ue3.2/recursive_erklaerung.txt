@@ -1,0 +1,10 @@
+recursive.c - Analyse
+
+Das Programm ruft foo() rekursiv 10.000 Mal auf. Pro Aufruf wird ein lokales
+Array von 2000 Bytes auf dem Stack allokiert. Das ergibt ca. 20 MB Stack-Nutzung.
+Der Standard-Stack ist 8 MB (ulimit -s -> 8192).
+
+Ergebnis: Segmentation Fault (Stack Overflow).
+
+Fix 1: ulimit -s unlimited
+Fix 2: gcc -Wl,-z,stacksize=41943040 -o recursive recursive.c
