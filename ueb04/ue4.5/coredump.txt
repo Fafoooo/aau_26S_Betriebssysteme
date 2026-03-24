@@ -1,0 +1,84 @@
+Ü 4.5 - Core Dump & GDB
+
+=== Was ist ein Core Dump? ===
+Ein Core Dump ist ein Abbild des Arbeitsspeichers eines Programms zum Zeitpunkt
+des Absturzes. Er enthält den gesamten Prozessspeicher (Stack, Heap, Register,
+Variablen) und wird als Datei auf die Festplatte geschrieben.
+Damit kann man im Nachhinein analysieren, warum ein Programm abgestürzt ist.
+
+
+=== Vorkehrungen für Core Dumps ===
+Standardmäßig sind Core Dumps oft deaktiviert (Größenlimit = 0).
+Man muss sie explizit aktivieren:
+
+  ulimit -c unlimited       (Core Dumps erlauben, unbegrenzte Größe)
+  gcc -g -o compute compute.c   (-g für Debug-Symbole, nötig für GDB!)
+  ./compute                 (Programm starten -> stürzt ab -> core Datei entsteht)
+
+
+=== Analyse des Absturzes ===
+
+a) Benötigte Dateien:
+   1. Die Core-Dump-Datei (core oder core.XXXX)
+   2. Das ausführbare Programm (compile mit -g für Debug-Symbole)
+   
+   Starten mit: gdb ./compute core
+
+
+b) Codezeile des Absturzes:
+   Im GDB: "bt" (backtrace) oder "list"
+   
+   (gdb) bt
+   #0  0x... in compute (arr=0x..., len=11) at compute.c:15
+   #1  0x... in main (argc=1, argv=0x...) at compute.c:27
+   
+   (gdb) list
+   -> Zeigt Zeile 15: assert(result);
+   
+   Das Programm stürzt in der Funktion compute() ab, Zeile 15.
+
+
+c) Grund für den Absturz:
+   (gdb) print sum
+   $1 = 0
+   (gdb) print squares
+   $2 = 110
+   (gdb) print result
+   $3 = 0    (Achtung: integer Division!)
+   
+   Ablauf: Das Array enthält [5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5]
+   -> sum = 5+4+3+2+1+0+(-1)+(-2)+(-3)+(-4)+(-5) = 0
+   -> squares / sum = 110 / 0 -> DIVISION DURCH NULL!
+   
+   Aber Moment: In C ist Integer-Division durch 0 undefined behavior,
+   result wird 0 (oder crash), und dann schlägt assert(result) fehl
+   weil assert(0) den Prozess mit SIGABRT beendet.
+   
+   Tatsächlich: squares/sum mit sum=0 erzeugt SIGFPE (Floating Point Exception),
+   oder falls der Compiler es anders handhabt, ergibt result=0 und
+   assert(0) löst SIGABRT aus.
+
+
+d) Wert der Konstanten NUM:
+   (gdb) print NUM
+   -> "No symbol 'NUM' in current context."
+   
+   Begründung: NUM ist ein Preprocessor-Macro (#define NUM 11).
+   Macros werden VOR der Kompilierung durch den Präprozessor ersetzt.
+   Im kompilierten Code existiert NUM nicht mehr - es wurde überall
+   durch die Zahl 11 ersetzt. Deshalb kennt GDB den Namen "NUM" nicht.
+   
+   Alternative: (gdb) info macro NUM  (nur mit -g3 Flag)
+   Oder: (gdb) print 11  (wir wissen es aus dem Quellcode)
+
+
+e) Full Backtrace:
+   (gdb) bt full
+   #0  compute (arr=0x7fff..., len=11) at compute.c:15
+           sum = 0
+           squares = 110
+           result = <undefined/0>
+           i = 11
+   #1  main (argc=1, argv=0x7fff...) at compute.c:27
+           arr = {5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5}
+           i = 11

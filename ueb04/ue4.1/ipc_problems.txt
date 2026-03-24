@@ -1,0 +1,51 @@
+Ü 4.1 - Classical IPC Problems: Readers/Writers
+
+=== Readers/Writers Problem ===
+
+Mehrere Prozesse greifen gleichzeitig auf eine gemeinsame Ressource zu (z.B. Datenbank).
+Es gibt zwei Arten von Prozessen:
+  - Reader: Liest nur Daten, verändert nichts.
+  - Writer: Verändert die Daten.
+
+Regeln:
+  - Beliebig viele Reader dürfen GLEICHZEITIG lesen (kein Konflikt).
+  - Ein Writer braucht EXKLUSIVEN Zugriff (kein anderer Reader oder Writer darf aktiv sein).
+  - Während ein Writer schreibt, darf niemand lesen oder schreiben.
+
+Problem: Wie koordiniert man das, ohne dass Reader oder Writer verhungern (Starvation)?
+
+Varianten:
+  1) Reader-Preference: Reader haben Vorrang -> Writer kann verhungern wenn ständig neue Reader kommen.
+  2) Writer-Preference: Writer haben Vorrang -> Reader kann verhungern.
+  3) Fair: Reihenfolge der Anfragen wird eingehalten (FIFO).
+
+
+=== Unterschiede zu anderen IPC-Problemen ===
+
+1) Dining Philosophers:
+   - 5 Philosophen sitzen an einem runden Tisch, zwischen je zwei ist eine Gabel.
+   - Zum Essen braucht man ZWEI Gabeln (links + rechts).
+   - Problem: Deadlock (alle greifen gleichzeitig die linke Gabel -> keiner kann essen).
+   - Unterschied zu Readers/Writers: Hier sind ALLE Prozesse gleich (kein Reader/Writer-Unterschied).
+     Das Problem ist Deadlock, nicht Starvation oder Lese-/Schreib-Koordination.
+
+2) Sleeping Barber:
+   - Ein Friseur schläft wenn keine Kunden da sind.
+   - Kunden kommen, setzen sich in den Warteraum (begrenzte Plätze).
+   - Wenn voll, gehen Kunden wieder.
+   - Problem: Race Condition beim Prüfen/Setzen von Warteraum-Status.
+   - Unterschied zu Readers/Writers: Erzeuger-Verbraucher-Szenario mit begrenztem Puffer.
+     Kein Unterschied zwischen Lese/Schreib-Zugriff.
+
+3) Cigarette Smokers:
+   - 3 Raucher, jeder hat eine von drei Zutaten (Tabak, Papier, Streichhölzer).
+   - Ein Agent legt zufällig 2 der 3 Zutaten auf den Tisch.
+   - Der Raucher der die fehlende Zutat hat, raucht.
+   - Problem: Koordination ohne zu wissen welche Zutat der Agent hinlegt.
+   - Unterschied zu Readers/Writers: Fokus auf Signalisierung und Ressourcen-Matching.
+     Keine gemeinsame Datenstruktur die gelesen/geschrieben wird.
+
+Kernunterschied: Beim Readers/Writers Problem gibt es ZWEI VERSCHIEDENE Zugriffsarten
+(lesen vs. schreiben), während bei den anderen Problemen alle Prozesse die gleiche
+Art von Zugriff haben. Das ermöglicht die Optimierung, dass gleichzeitiges Lesen
+erlaubt ist (Parallelität), was bei den anderen Problemen nicht existiert.
