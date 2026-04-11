@@ -1,36 +1,66 @@
 // Ü 4.2 - Erzeugung von Prozessen mit fork()
 //
-// fork() gibt zurueck:
-//   - pid_t (Typ: int-artig, definiert in sys/types.h)
-//   - Im Elternprozess: PID des Kindes (> 0)
-//   - Im Kindprozess: 0
-//   - Bei Fehler: -1
 //
-// Prozessbaum fuer den gegebenen Code:
+// === Rückgabewerte von fork() ===
 //
-// P (Original)
-// ├── C1 (i=0, fork()==0)
-// │   ├── C1a (j=0, inner fork Kind)  -> exit(0)
-// │   └── C1b (j=1, inner fork Kind)  -> exit(0)
-// │   (C1 selbst: nach inner loop, faehrt mit i=1 fort)
-// │   └── C1c (i=1, fork()==0)
-// │       ├── C1c_a (j=0, inner fork Kind) -> exit(0)
-// │       └── C1c_b (j=1, inner fork Kind) -> exit(0)
-// └── C2 (i=1, fork()==0)
-//     ├── C2a (j=0, inner fork Kind) -> exit(0)
-//     └── C2b (j=1, inner fork Kind) -> exit(0)
+// Rückgabetyp: pid_t (definiert in <sys/types.h>)
 //
-// Insgesamt werden neben P noch 8 Kindprozesse erzeugt (9 Prozesse total).
-// Erklärung:
-//   - Iteration i=0: P forkt C1. C1 druckt "Outer Hello World"
-//     Inner loop j=0: C1 forkt C1a. C1a druckt "Inner Hello World" und exit(0).
-//                     C1 druckt auch "Inner Hello World" (parent-Seite von inner fork).
-//     Inner loop j=1: C1 forkt C1b. C1b druckt "Inner Hello World" und exit(0).
-//                     C1 druckt auch "Inner Hello World".
-//     C1 geht weiter zur naechsten Iteration i=1.
-//   - Iteration i=1 fuer P: P forkt C2. Gleiche Logik wie C1.
-//   - Iteration i=1 fuer C1: C1 forkt C1c. C1c druckt "Outer Hello World"
-//     und macht ebenfalls den inner loop (erzeugt C1c_a und C1c_b).
+//   - Im Elternprozess: PID des neuen Kindes (größer als 0)
+//   - Im Kindprozess:   0
+//   - Bei Fehler:      -1
+//
+//
+// === Ablauf des Codefragments ===
+//
+// Die äußere Schleife läuft zweimal und forkt jedes Mal einmal. Das
+// Kind des äußeren fork betritt den if-Block und führt die innere
+// Schleife aus. Nach der inneren Schleife fällt das Kind zurück in
+// die äußere Schleife und forkt bei der nächsten Iteration erneut.
+//
+// Die innere Schleife läuft ebenfalls zweimal und forkt jedes Mal.
+// Das Kind des inneren fork beendet sich sofort mit exit(0) und
+// erzeugt keine weiteren Prozesse.
+//
+// Das Wichtigste dabei:
+//
+//   - Kinder des ÄUSSEREN fork leben weiter und können selbst forken.
+//   - Kinder des INNEREN fork sind Einweg-Prozesse (sofort exit).
+//
+//
+// === Der Prozessbaum ===
+//
+//   P (Original, Hauptprozess)
+//   |
+//   +-- C1   (erzeugt bei P.i=0, äußerer fork)
+//   |   |
+//   |   +-- C1a    (innerer fork bei C1.j=0, exit)
+//   |   +-- C1b    (innerer fork bei C1.j=1, exit)
+//   |   +-- C1c    (äußerer fork bei C1.i=1)
+//   |       |
+//   |       +-- C1c_a    (innerer fork bei C1c.j=0, exit)
+//   |       +-- C1c_b    (innerer fork bei C1c.j=1, exit)
+//   |
+//   +-- C2   (erzeugt bei P.i=1, äußerer fork)
+//       |
+//       +-- C2a    (innerer fork bei C2.j=0, exit)
+//       +-- C2b    (innerer fork bei C2.j=1, exit)
+//
+// Insgesamt werden neben P 9 weitere Kindprozesse erzeugt.
+// Zusammen mit P sind das 10 Prozesse.
+//
+// Nicht vergessen: C1 forkt zweimal. Einmal die beiden inneren Kinder
+// C1a und C1b, und danach, bei der nächsten Iteration der äußeren
+// Schleife (C1.i=1), noch einmal C1c. C1c macht dann selbst wieder
+// die innere Schleife.
+//
+//
+// === Beobachtung mit ps/pstree ===
+//
+// Während das Programm läuft (sleep(2) gibt genug Zeit), kann man
+// in einem zweiten Terminal den realen Prozessbaum anschauen:
+//
+//     pstree -p $(pgrep forktree)
+//     ps -ef | grep forktree
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,37 +72,34 @@ int main(void)
 {
     pid_t pid;
 
-    printf("[P] Hauptprozess PID = %d\n", getpid());
-
     for (int i = 0; i < 2; i++)
     {
         if (fork() == 0)
         {
-            printf("[Kind] Outer Hello World (PID=%d, Parent=%d, i=%d)\n",
-                   getpid(), getppid(), i);
+            printf("Outer Hello World (PID=%d, PPID=%d)\n",
+                   getpid(), getppid());
 
             for (int j = 0; j < 2; j++)
             {
                 pid = fork();
-                printf("[%s] -- Inner Hello World (PID=%d, Parent=%d, j=%d)\n",
-                       pid == 0 ? "Enkel" : "Kind", getpid(), getppid(), j);
+                printf("-- Inner Hello World (PID=%d, PPID=%d)\n",
+                       getpid(), getppid());
 
                 if (pid == 0)
                 {
-                    // Kindprozess des inneren fork -> sofort beenden
+                    // Kindprozess des inneren fork: sofort beenden
                     exit(0);
                 }
             }
-            // Kindprozess des aeusseren fork -> nach inner loop beenden
-            // (ausser es gibt noch eine i-Iteration, dann laeuft es weiter)
         }
     }
 
-    // Elternprozess: auf alle Kinder warten
-    sleep(2);  // Kurze Pause damit die Ausgabe lesbar ist
-    while (wait(NULL) > 0);
+    // Pause, damit man in einem zweiten Terminal Zeit hat, den
+    // Prozessbaum mit ps oder pstree anzuschauen.
+    sleep(10);
 
-    printf("[P] Alle Kinder beendet. PID = %d\n", getpid());
+    // Auf alle direkten Kinder warten, damit keine Zombies übrig bleiben.
+    while (wait(NULL) > 0);
 
     return EXIT_SUCCESS;
 }

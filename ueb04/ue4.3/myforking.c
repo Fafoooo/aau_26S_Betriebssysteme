@@ -1,10 +1,26 @@
-// Ü 4.3 - 5 Kindprozesse erstellen, jeder zaehlt bis zu seiner PID
+// Ü 4.3 - Prozesse: 5 Kinder erzeugen und zählen lassen
 //
-// Warum sind manche Prozesse schon fertig bevor andere anfangen?
-// -> Jeder Kindprozess laeuft unabhaengig. Das OS entscheidet per Scheduler
-//    welcher Prozess wann CPU-Zeit bekommt. Es gibt keine garantierte Reihenfolge.
-//    Ein Kind mit niedrigerer PID koennte trotzdem spaeter anfangen weil das OS
-//    einem anderen Prozess zuerst die CPU gibt.
+//
+// === Aufgabe ===
+//
+// Der Elternprozess erzeugt 5 Kindprozesse. Jedes Kind:
+//   - gibt seine eigene PID und die des Elternprozesses aus
+//   - zählt von 1 bis zu seiner eigenen PID
+//   - beendet sich danach
+//
+// Der Elternprozess wartet mit wait() auf alle Kinder.
+//
+//
+// === Warum sind manche Prozesse schon fertig, bevor andere anfangen? ===
+//
+// Jedes Kind läuft als eigenständiger Prozess parallel zu den anderen.
+// Der Scheduler des Betriebssystems entscheidet, welcher Prozess wann
+// CPU-Zeit bekommt. Es gibt keine garantierte Reihenfolge.
+//
+// Ein Kind mit niedrigerer PID kann trotzdem später mit dem Zählen
+// anfangen, weil das OS einem anderen Prozess zuerst die CPU gibt.
+// Umgekehrt kann ein spät erzeugtes Kind bereits fertig sein, bevor
+// ein früher erzeugtes überhaupt losgelaufen ist.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,43 +28,29 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define NUM_CHILDREN 5
-
 int main(void)
 {
-    for (int i = 0; i < NUM_CHILDREN; i++)
+    const int num_children = 5;
+
+    for (int i = 0; i < num_children; i++)
     {
-        pid_t pid = fork();
-
-        if (pid < 0)
+        if (fork() == 0)
         {
-            perror("fork");
-            exit(EXIT_FAILURE);
-        }
-        else if (pid == 0)
-        {
-            // Kindprozess
-            pid_t my_pid    = getpid();
-            pid_t parent_id = getppid();
+            pid_t my_pid = getpid();
+            printf("[kind] pid %d von [eltern] pid %d\n", my_pid, getppid());
 
-            printf("[kind] pid %d von [eltern] pid %d\n", my_pid, parent_id);
-
-            // Von (pid - 7) bis pid zaehlen (sonst waere die Ausgabe riesig)
-            // Die Angabe sagt "von 1 bis PID", wir zeigen nur die letzten paar
-            long start = (my_pid > 7) ? my_pid - 7 : 1;
-            for (long c = start; c <= my_pid; c++)
+            for (long c = 1; c <= my_pid; c++)
             {
-                printf("[kind] pid %d Zaehler: %ld\n", my_pid, c);
+                printf("[kind] pid %d Zähler: %ld\n", my_pid, c);
             }
 
-            printf("\n[kind] pid %d zaehlt bis %d\n\n", my_pid, my_pid);
+            printf("[kind] pid %d zählt bis %d\n", my_pid, my_pid);
             exit(EXIT_SUCCESS);
         }
-        // Elternprozess: naechstes Kind erzeugen
     }
 
-    // Elternprozess: auf alle Kinder warten
-    for (int i = 0; i < NUM_CHILDREN; i++)
+    // Auf alle Kinder warten
+    for (int i = 0; i < num_children; i++)
     {
         wait(NULL);
     }

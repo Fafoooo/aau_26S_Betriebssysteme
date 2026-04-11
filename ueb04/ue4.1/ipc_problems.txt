@@ -1,51 +1,113 @@
 Ü 4.1 - Classical IPC Problems: Readers/Writers
 
-=== Readers/Writers Problem ===
 
-Mehrere Prozesse greifen gleichzeitig auf eine gemeinsame Ressource zu (z.B. Datenbank).
-Es gibt zwei Arten von Prozessen:
-  - Reader: Liest nur Daten, verändert nichts.
-  - Writer: Verändert die Daten.
+=== Das Readers/Writers Problem ===
 
-Regeln:
-  - Beliebig viele Reader dürfen GLEICHZEITIG lesen (kein Konflikt).
-  - Ein Writer braucht EXKLUSIVEN Zugriff (kein anderer Reader oder Writer darf aktiv sein).
-  - Während ein Writer schreibt, darf niemand lesen oder schreiben.
+Beim Readers/Writers Problem greifen mehrere Prozesse auf eine gemeinsame
+Ressource zu, zum Beispiel auf eine Datenbank. Dabei gibt es zwei Arten
+von Prozessen:
 
-Problem: Wie koordiniert man das, ohne dass Reader oder Writer verhungern (Starvation)?
+  - Reader lesen nur Daten und verändern nichts.
+  - Writer verändern die Daten.
 
-Varianten:
-  1) Reader-Preference: Reader haben Vorrang -> Writer kann verhungern wenn ständig neue Reader kommen.
-  2) Writer-Preference: Writer haben Vorrang -> Reader kann verhungern.
-  3) Fair: Reihenfolge der Anfragen wird eingehalten (FIFO).
+Daraus ergeben sich drei einfache Regeln:
+
+  - Mehrere Reader dürfen gleichzeitig lesen. Das ist unproblematisch, weil
+    sich der Inhalt dabei nicht ändert.
+  - Ein Writer braucht exklusiven Zugriff. Während er schreibt, darf kein
+    Reader lesen und kein zweiter Writer schreiben.
+  - Der Grund für die exklusive Sperre ist, dass sonst inkonsistente Daten
+    entstehen könnten.
+
+Die eigentliche Schwierigkeit liegt in der Frage, wie man das koordiniert,
+ohne dass ein Prozess unendlich lange warten muss. Dieses Phänomen nennt
+man Starvation.
 
 
-=== Unterschiede zu anderen IPC-Problemen ===
+=== Die drei Varianten ===
 
-1) Dining Philosophers:
-   - 5 Philosophen sitzen an einem runden Tisch, zwischen je zwei ist eine Gabel.
-   - Zum Essen braucht man ZWEI Gabeln (links + rechts).
-   - Problem: Deadlock (alle greifen gleichzeitig die linke Gabel -> keiner kann essen).
-   - Unterschied zu Readers/Writers: Hier sind ALLE Prozesse gleich (kein Reader/Writer-Unterschied).
-     Das Problem ist Deadlock, nicht Starvation oder Lese-/Schreib-Koordination.
+Je nachdem, wer bevorzugt wird, gibt es drei typische Lösungen:
 
-2) Sleeping Barber:
-   - Ein Friseur schläft wenn keine Kunden da sind.
-   - Kunden kommen, setzen sich in den Warteraum (begrenzte Plätze).
-   - Wenn voll, gehen Kunden wieder.
-   - Problem: Race Condition beim Prüfen/Setzen von Warteraum-Status.
-   - Unterschied zu Readers/Writers: Erzeuger-Verbraucher-Szenario mit begrenztem Puffer.
-     Kein Unterschied zwischen Lese/Schreib-Zugriff.
+  1) Reader-Preference
+     Reader haben Vorrang. Solange noch Reader aktiv sind, kommt kein Writer
+     zum Zug.
+     Problem: Wenn ständig neue Reader nachkommen, kann der Writer verhungern.
 
-3) Cigarette Smokers:
-   - 3 Raucher, jeder hat eine von drei Zutaten (Tabak, Papier, Streichhölzer).
-   - Ein Agent legt zufällig 2 der 3 Zutaten auf den Tisch.
-   - Der Raucher der die fehlende Zutat hat, raucht.
-   - Problem: Koordination ohne zu wissen welche Zutat der Agent hinlegt.
-   - Unterschied zu Readers/Writers: Fokus auf Signalisierung und Ressourcen-Matching.
-     Keine gemeinsame Datenstruktur die gelesen/geschrieben wird.
+  2) Writer-Preference
+     Writer haben Vorrang. Sobald ein Writer wartet, werden keine neuen
+     Reader mehr zugelassen.
+     Problem: Jetzt können stattdessen die Reader verhungern.
 
-Kernunterschied: Beim Readers/Writers Problem gibt es ZWEI VERSCHIEDENE Zugriffsarten
-(lesen vs. schreiben), während bei den anderen Problemen alle Prozesse die gleiche
-Art von Zugriff haben. Das ermöglicht die Optimierung, dass gleichzeitiges Lesen
-erlaubt ist (Parallelität), was bei den anderen Problemen nicht existiert.
+  3) Fair (FIFO)
+     Die Reihenfolge der Anfragen wird eingehalten. Jeder Prozess kommt
+     genau dann dran, wenn er an der Reihe ist.
+     Vorteil: Niemand verhungert.
+     Nachteil: Die Umsetzung ist aufwendiger.
+
+Keine der drei Varianten ist objektiv die beste. Welche Strategie man
+wählt, hängt vom Anwendungsfall ab.
+
+
+=== Unterschied zu den anderen klassischen IPC-Problemen ===
+
+Um den Unterschied zum Readers/Writers Problem deutlich zu machen, hier
+ein kurzer Überblick über die drei anderen Klassiker aus der Vorlesung.
+
+
+1) Dining Philosophers
+
+   Fünf Philosophen sitzen an einem runden Tisch. Zwischen je zwei
+   Philosophen liegt eine Gabel, und zum Essen braucht jeder Philosoph
+   zwei Gabeln (links und rechts).
+
+   Hauptproblem: Deadlock. Wenn alle gleichzeitig nach der linken Gabel
+   greifen, wartet jeder auf die rechte, und keiner kann weitermachen.
+
+   Unterschied zu Readers/Writers: Alle Philosophen verhalten sich gleich.
+   Es gibt keine Unterscheidung zwischen einem harmlosen und einem
+   exklusiven Zugriff.
+
+
+2) Sleeping Barber
+
+   Ein Friseur hat einen Warteraum mit begrenzt vielen Plätzen. Solange
+   keine Kunden da sind, schläft er. Kommt ein Kunde und der Warteraum
+   ist voll, geht der Kunde wieder weg.
+
+   Hauptproblem: Race Condition beim Prüfen und Setzen des
+   Warteraum-Status. Im Kern handelt es sich um ein
+   Producer/Consumer-Szenario mit begrenztem Puffer.
+
+   Unterschied zu Readers/Writers: Alle Kunden verhalten sich gleich.
+   Es gibt wieder keine unterschiedlichen Zugriffsarten.
+
+
+3) Cigarette Smokers
+
+   Drei Raucher haben jeweils eine von drei Zutaten (Tabak, Papier,
+   Streichhölzer). Ein Agent legt zufällig zwei der drei Zutaten auf
+   den Tisch. Der Raucher, der die fehlende dritte Zutat hat, darf
+   rauchen.
+
+   Hauptproblem: Koordination und Signalisierung. Die Raucher müssen
+   mitbekommen, wann sie selbst an der Reihe sind.
+
+   Unterschied zu Readers/Writers: Keine gemeinsame Datenstruktur,
+   sondern Ressourcen-Matching über Signale. Auch hier gibt es keine
+   zwei verschiedenen Zugriffsarten.
+
+
+=== Der Kernunterschied ===
+
+Das Readers/Writers Problem ist das einzige der vier Probleme, bei dem
+es zwei verschiedene Arten von Zugriff gibt: lesen und schreiben.
+
+Genau dieser Unterschied ist der Grund, warum man überhaupt optimieren
+kann. Mehrere Reader dürfen parallel arbeiten, solange gerade kein Writer
+aktiv ist.
+
+Bei den anderen drei Problemen verhalten sich alle Prozesse gleich. Jeder
+Philosoph blockiert Gabeln auf dieselbe Weise, jeder Kunde belegt einen
+Warteraum-Platz auf dieselbe Weise, jeder Raucher wartet auf dieselbe Art
+auf seine Zutaten. Es gibt dort keinen harmlosen Zugriff, den man
+parallelisieren könnte.
