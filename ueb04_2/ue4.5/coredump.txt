@@ -1,0 +1,104 @@
+Übung 4.5 - Core Dump und GDB
+
+
+== Was ist ein Core Dump? ==
+
+Wenn ein Programm abstürzt, kann das Betriebssystem ein Abbild des
+Prozessspeichers auf die Festplatte schreiben — den sogenannten
+Core Dump. Er enthält den Zustand von Stack, Heap, Registern und
+Variablen zum Absturzzeitpunkt. Damit lässt sich der Absturz
+anschließend analysieren, ohne das Programm erneut laufen lassen
+zu müssen.
+
+
+== Was ist GDB? ==
+
+Der GNU Debugger (GDB) ist ein Tool zum Debuggen kompilierter
+Programme. Man kann damit Programme schrittweise durchlaufen,
+Haltepunkte setzen, Variableninhalte inspizieren und Core Dumps
+laden. Bei einem geladenen Core Dump zeigt GDB direkt die Stelle,
+an der das Programm abgestürzt ist.
+
+
+== Vorbereitung ==
+
+Core Dumps sind normalerweise deaktiviert (Größenlimit steht auf 0).
+So aktiviert man sie und erzeugt einen:
+
+  ulimit -c unlimited
+  gcc -g -o compute compute.c
+  ./compute
+
+Danach liegt eine Datei namens "core" oder "core.<PID>" im
+Arbeitsverzeichnis. Laden mit:
+
+  gdb ./compute core
+
+
+== Analyse ==
+
+a) Welche Dateien werden benötigt?
+
+   1. Die Core-Dump-Datei
+   2. Das Programm (mit -g kompiliert, damit Debug-Symbole vorhanden sind)
+
+
+b) An welcher Stelle stürzt das Programm ab?
+
+   (gdb) bt
+   #0  compute (arr=0x..., len=11) at compute.c:18
+   #1  main (argc=1, argv=0x...) at compute.c:33
+
+   (gdb) list
+   -> Zeile 18:  int result = squares / sum;
+
+   Der Absturz passiert in der Funktion compute(), Zeile 18.
+   Das darauffolgende assert(result) wird nicht mehr erreicht.
+
+
+c) Warum stürzt es ab?
+
+   In main() wird das Array befüllt:
+     arr[i] = NUM/2 - i   mit NUM=11, also NUM/2=5
+     => arr = {5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5}
+
+   In compute() werden summiert:
+     sum     = 5+4+3+2+1+0+(-1)+(-2)+(-3)+(-4)+(-5) = 0
+     squares = 25+16+9+4+1+0+1+4+9+16+25 = 110
+
+   Dann passiert:
+     result = squares / sum = 110 / 0
+
+   Integer-Division durch 0 löst ein SIGFPE-Signal aus (Floating
+   Point Exception). Der Kernel beendet den Prozess sofort.
+
+   Kontrolle in GDB:
+     (gdb) print sum      => 0
+     (gdb) print squares  => 110
+
+
+d) Was ist der Wert der Konstante NUM?
+
+   (gdb) print NUM
+   -> "No symbol 'NUM' in current context."
+
+   NUM ist ein Präprozessor-Makro (#define NUM 11). Der Präprozessor
+   ersetzt es vor dem Kompilieren durch den Wert 11. Im fertigen
+   Programm existiert der Name NUM nicht mehr, daher kennt GDB
+   ihn nicht.
+
+   Lösung: Mit gcc -g3 kompilieren, dann speichert gcc auch Makros:
+     (gdb) info macro NUM
+
+
+e) Vollständiger Backtrace:
+
+   (gdb) bt full
+   #0  compute (arr=0x7fff..., len=11) at compute.c:18
+           sum     = 0
+           squares = 110
+           i       = 11
+           result  = <nicht gesetzt>
+   #1  main (argc=1, argv=0x7fff...) at compute.c:33
+           arr = {5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5}
+           i   = 11

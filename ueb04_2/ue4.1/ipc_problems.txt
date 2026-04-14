@@ -1,0 +1,83 @@
+Übung 4.1 - Klassische IPC-Probleme: Readers/Writers
+
+
+== Beschreibung des Readers/Writers-Problems ==
+
+Das Readers/Writers-Problem beschreibt eine Situation, in der mehrere
+Prozesse gleichzeitig auf eine gemeinsam genutzte Ressource zugreifen
+wollen (z.B. eine Datenbank oder eine Datei im Speicher).
+
+Es gibt zwei Rollen:
+  - Reader: liest die Daten, verändert sie aber nicht
+  - Writer: verändert die Daten
+
+Die Regeln dafür sind:
+  - Mehrere Reader können gleichzeitig zugreifen, weil Lesen allein
+    keine Inkonsistenzen verursacht.
+  - Ein Writer muss alleine arbeiten, d.h. weder ein anderer Writer
+    noch ein Reader darf gleichzeitig zugreifen.
+  - Ohne diese Einschränkung könnten Daten in einem inkonsistenten
+    Zustand gelesen oder überschrieben werden.
+
+Die zentrale Herausforderung ist, dass kein Prozess ewig warten soll.
+Wenn ein Prozess niemals drankommt, spricht man von Starvation.
+
+
+== Drei Lösungsansätze ==
+
+1) Readers-First
+   Lesende Prozesse werden bevorzugt behandelt. Solange ein Reader
+   aktiv ist, können weitere Reader dazukommen.
+   Nachteil: Ein Writer muss unter Umständen endlos warten, wenn
+   immer wieder neue Reader eintreffen.
+
+2) Writers-First
+   Wartende Writer werden bevorzugt. Wenn ein Writer auf Zugriff
+   wartet, werden keine neuen Reader mehr durchgelassen.
+   Nachteil: Reader können in diesem Fall verhungern.
+
+3) FIFO-Ansatz (Fair)
+   Jeder Prozess kommt in der Reihenfolge seiner Anfrage dran.
+   So wird garantiert, dass niemand verhungert.
+   Nachteil: Komplexere Implementierung nötig.
+
+Welcher Ansatz der richtige ist, kommt auf die Anforderungen an.
+Es gibt keine universell beste Lösung.
+
+
+== Abgrenzung zu anderen klassischen IPC-Problemen ==
+
+Zum Vergleich die drei anderen klassischen Probleme:
+
+
+Dining Philosophers:
+  Fünf Philosophen teilen sich fünf Gabeln an einem runden Tisch.
+  Zum Essen braucht jeder zwei Gabeln. Das Hauptrisiko ist ein
+  Deadlock: Alle greifen gleichzeitig zur linken Gabel und warten
+  dann endlos auf die rechte.
+  Abgrenzung: Es gibt nur eine Art von Zugriff. Alle Philosophen
+  machen dasselbe.
+
+
+Sleeping Barber:
+  Ein Friseur schläft, wenn keine Kunden da sind. Der Warteraum
+  ist begrenzt — voller Raum bedeutet, der Kunde geht wieder.
+  Das Problem ähnelt dem Producer/Consumer-Muster.
+  Abgrenzung: Alle Kunden sind gleichartig. Kein Unterschied
+  zwischen harmlosen und exklusiven Zugriffen.
+
+
+Cigarette Smokers:
+  Drei Raucher besitzen jeweils eine der drei Zutaten. Ein Agent
+  legt zwei Zutaten hin, und der passende Raucher nimmt sie.
+  Das Problem liegt in der Koordination über Signale.
+  Abgrenzung: Es geht um Ressourcen-Matching, nicht um gemeinsamen
+  Datenzugriff.
+
+
+== Fazit ==
+
+Das Besondere am Readers/Writers-Problem ist, dass zwei verschiedene
+Zugriffsarten existieren: Lesen (harmlos, parallelisierbar) und
+Schreiben (exklusiv). Bei den anderen Problemen gibt es diese
+Unterscheidung nicht — alle Prozesse greifen auf dieselbe Weise zu.
