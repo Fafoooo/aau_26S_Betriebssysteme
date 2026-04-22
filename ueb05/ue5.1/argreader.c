@@ -1,23 +1,33 @@
 // Ü 5.1 - argc und argv: Parameter einlesen, Zahlen erkennen, Summe berechnen
 //
-// argc = Anzahl der Argumente (inkl. Programmname)
-// argv = Array von Strings (argv[0] = Programmname, argv[1] = erster Parameter, ...)
 //
-// Aufruf: ./argreader 1 2 nan 4
-// Ausgabe:
-//   Anzahl der Parameter: 4
-//   1 Summe: 1
-//   2 Summe: 3
-//   nan
-//   4 Summe: 7
+// === Aufgabe ===
+//
+// Das Programm akzeptiert beliebig viele Parameter auf der Kommandozeile.
+// Zuerst wird die Anzahl der Parameter ausgegeben, dann jeder Parameter
+// in einer eigenen Zeile. Wenn ein Parameter eine Zahl ist, wird zusätzlich
+// die laufende Summe aller bisher erhaltenen Zahlen danebengeschrieben.
+//
+// argc enthält die Anzahl der Argumente inklusive Programmname in argv[0].
+// argv ist ein Array von Strings: argv[0] ist der Programmname, argv[1..]
+// sind die übergebenen Parameter.
+//
+//
+// === Beispiel ===
+//
+// Aufruf:   ./argreader 1 2 nan 4
+// Ausgabe:  Anzahl der Parameter: 4
+//           1 Summe: 1
+//           2 Summe: 3
+//           nan
+//           4 Summe: 7
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 #include <errno.h>
 
-// Prueft ob ein String eine gueltige Zahl ist
+// Prüft, ob ein String eine gültige ganze Zahl ist.
+// Erfolgreich, wenn strtol alles verarbeitet und kein Fehler auftritt.
 int is_number(const char *str)
 {
     if (str == NULL || *str == '\0')
@@ -27,7 +37,6 @@ int is_number(const char *str)
     errno = 0;
     strtol(str, &endptr, 10);
 
-    // Erfolgreich wenn alles konsumiert wurde und kein Fehler
     return (errno == 0 && *endptr == '\0');
 }
 
@@ -41,8 +50,7 @@ int main(int argc, char *argv[])
     {
         if (is_number(argv[i]))
         {
-            long val = strtol(argv[i], NULL, 10);
-            sum += val;
+            sum += strtol(argv[i], NULL, 10);
             printf("%s Summe: %ld\n", argv[i], sum);
         }
         else

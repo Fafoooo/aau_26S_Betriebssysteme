@@ -1,84 +1,78 @@
 // Ü 5.2 - Minimalistischer Kommando-Interpreter mit exec
 //
-// Warum execvp?
-//   - execvp nimmt ein Array von Strings (wie argv) -> passt perfekt zu unseren Parametern
-//   - Das 'p' in execvp sucht das Programm im PATH (wie die Shell)
-//   - Das 'v' steht fuer vector (Array), im Gegensatz zu 'l' (Liste einzelner Argumente)
-//   - execl/execlp: Man muesste jeden Parameter einzeln angeben -> unflexibel
-//   - execve: Braucht den vollen Pfad + Environment-Array -> zu aufwaendig
 //
-// Aufruf: ./myexec ls -al
-// Fuehrt "ls -al" aus
+// === Aufgabe ===
+//
+// Das Programm nimmt einen Kommandonamen und dessen Parameter entgegen
+// und führt den Befehl mit einer Funktion der exec-Familie aus.
+//
+// Aufruf:  ./myexec ls -al
+// Wirkung: innerhalb von myexec wird "ls -al" ausgeführt.
+//
+//
+// === Welche exec-Variante ist am geeignetsten? ===
+//
+// Wir verwenden execvp, weil:
+//   - das 'v' ein Array von Strings (vector) erwartet. Das passt genau
+//     zum Format von argv, ohne dass wir etwas umbauen müssen.
+//   - das 'p' das Programm im PATH sucht, wie es auch die Shell tut.
+//     Man muss keinen vollen Pfad wie /bin/ls angeben.
+//
+// Die anderen Varianten sind für diesen Fall weniger praktisch:
+//   - execl / execlp: erwarten die Argumente einzeln aufgezählt.
+//     Bei beliebig vielen Parametern nicht praktikabel.
+//   - execve / execvpe: brauchen zusätzlich ein Environment-Array,
+//     hier nicht nötig.
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-void print_usage(const char *prog)
-{
-    printf("Usage: %s <command> [arguments...]\n", prog);
-    printf("Fuehrt das angegebene Kommando aus.\n");
-    printf("Beispiel: %s ls -al\n", prog);
-}
-
 int main(int argc, char **argv)
 {
-    // Schritt 0: Argumente pruefen
     if (argc < 2)
     {
-        print_usage(argv[0]);
+        fprintf(stderr, "Usage: %s <command> [args...]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
+    fprintf(stdout, "[P] current process id = %d\n", (int)getpid());
+
+    pid_t pid = fork();
+
+    if (pid < 0)
     {
-        print_usage(argv[0]);
-        return EXIT_SUCCESS;
+        perror("fork");
+        return EXIT_FAILURE;
     }
 
-    pid_t pid;
-
-    fprintf(stdout, "[P]\tcurrent process id = %i\n", (int)getpid());
-
-    // Schritt 3.1: Kindprozess erzeugen
-    pid = fork();
-
-    if (pid > (pid_t)0)
+    if (pid == 0)
     {
-        // Schritt 3.2: Elternprozess -> auf Kind warten
-        int status;
-        waitpid(pid, &status, 0);
-
-        if (WIFEXITED(status))
-        {
-            fprintf(stdout, "[P]\tChild exited with status %d\n", WEXITSTATUS(status));
-        }
-        else if (WIFSIGNALED(status))
-        {
-            fprintf(stdout, "[P]\tChild killed by signal %d\n", WTERMSIG(status));
-        }
-    }
-    else if (pid == (pid_t)0)
-    {
-        // Schritt 3.3: Kindprozess -> Programm ausfuehren
-        fprintf(stdout, "[C]\tchild process id = %i, executing: %s\n",
+        // Kindprozess: das übergebene Kommando ausführen.
+        // argv+1 zeigt auf ["ls", "-al", ..., NULL] -- genau das Format,
+        // das execvp erwartet.
+        fprintf(stdout, "[C] child process id = %d, executing: %s\n",
                 (int)getpid(), argv[1]);
 
-        // argv+1 zeigt auf ["ls", "-al", NULL] -> genau was execvp braucht
         execvp(argv[1], argv + 1);
 
-        // Wenn execvp zurueckkehrt, ist ein Fehler aufgetreten
-        perror("execvp failed");
+        // Wenn execvp zurückkehrt, ist ein Fehler aufgetreten.
+        perror("execvp");
         exit(EXIT_FAILURE);
     }
-    else
+
+    // Elternprozess: auf das Kind warten und Status ausgeben.
+    int status;
+    waitpid(pid, &status, 0);
+
+    if (WIFEXITED(status))
     {
-        // Schritt 3.4: fork fehlgeschlagen
-        perror("fork failed");
-        return EXIT_FAILURE;
+        fprintf(stdout, "[P] Child exited with status %d\n", WEXITSTATUS(status));
+    }
+    else if (WIFSIGNALED(status))
+    {
+        fprintf(stdout, "[P] Child killed by signal %d\n", WTERMSIG(status));
     }
 
     return EXIT_SUCCESS;
