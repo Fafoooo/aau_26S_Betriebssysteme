@@ -1,0 +1,57 @@
+Übung 7.3 - Threads: Grundlagen
+
+
+a) Threads vs. Prozesse
+========================
+
+Prozess:  eigener Adressraum, eigene FDs/Signal-Handler.
+          Context-Switch teuer, Crash isoliert.
+
+Thread:   lebt im Prozess, eigener Stack/Register,
+          teilt sich Heap + globale Variablen.
+          Context-Switch billig, Crash reisst alles mit.
+
+Faustregel:  Isolation -> Prozesse.  Geteilte Daten -> Threads.
+
+
+b) POSIX Threads (pthreads)
+============================
+
+Standard-Thread-API auf Unix. Header <pthread.h>.
+
+  pthread_t            Datentyp fuer Thread-ID (opak, wie pid_t).
+  pthread_self()       Liefert die eigene Thread-ID.
+  pthread_create()     Startet neuen Thread mit Funktion + Argument.
+  pthread_exit()       Beendet AKTUELLEN Thread (nicht den Prozess!).
+  pthread_join()       Wartet bis Thread fertig (wie waitpid).
+  pthread_detach()     Thread laeuft eigenstaendig, kein Join noetig.
+
+  pthread_mutex_t      Mutex - schuetzt kritische Abschnitte.
+  pthread_mutex_lock   Sperren (blockiert wenn schon belegt).
+  pthread_mutex_unlock Freigeben.
+
+  pthread_cond_t       Condition Variable - warten bis Bedingung erfuellt.
+  pthread_cond_init    Anlegen.
+  pthread_cond_destroy Aufraeumen.
+  pthread_cond_signal  Genau EINEN wartenden Thread aufwecken.
+  pthread_cond_broadcast  ALLE wartenden Threads aufwecken.
+  pthread_cond_wait    Mutex freigeben + schlafen (atomar). Beim Aufwachen
+                       Mutex wieder gehalten. Immer in while-Schleife
+                       wegen "spurious wakeups".
+
+
+Kompilieren
+============
+
+  gcc -pthread -o programm programm.c
+
+Das -pthread setzt Compiler- und Linker-Flags. Ohne -pthread gibt's
+"undefined reference to pthread_create" beim Linken.
+
+
+Programm
+=========
+
+threadcountdown.c im selben Ordner.
+Aufruf:  ./threadcountdown 3 5 4
+-> 3 Threads zaehlen parallel von 3, 5, 4 bis 0 herunter.

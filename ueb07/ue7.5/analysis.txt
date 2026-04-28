@@ -1,0 +1,126 @@
+Übung 7.5 - Deadlock-Analyse
+
+
+Gegeben
+========
+
+Vier Threads, vier Ressourcen, ein Mutex pro Ressource:
+
+    T1 braucht R1, R2, R3
+    T2 braucht R3, R4
+    T3 braucht R1, R4
+    T4 braucht R1, R4
+
+Im Original-Code (siehe ../Angabe/7.5_deadlock_analysis.c) sperrt
+jeder Thread seine Ressourcen in zufälliger Reihenfolge (shuffle()).
+
+
+Was passiert?
+==============
+
+Beispiel-Szenario, das einen Deadlock auslöst:
+
+    T1 sperrt R1
+    T3 sperrt R4
+    T1 will jetzt R2 ... bekommt es noch
+    T1 will R3
+    T2 sperrt R3 zuerst (da freigespielt)
+    T2 will R4 -> wartet auf T3
+    T3 will R1 -> wartet auf T1
+    T1 hat R1, R2, will R3 -> wartet auf T2
+
+Jetzt warten T1, T2, T3 jeweils gegenseitig aufeinander -> Deadlock.
+Im realen Lauf taucht das nicht IMMER auf, weil die zufällige Reihenfolge
+manchmal zufällig kompatibel ist. Aber sobald die "schlechte" Anordnung
+auftritt, hängt das Programm.
+
+
+Coffman-Bedingungen
+====================
+
+Edward Coffman hat 1971 die vier Bedingungen formuliert, die ALLE
+gleichzeitig gelten müssen, damit ein Deadlock möglich ist:
+
+  1. Mutual Exclusion (gegenseitiger Ausschluss)
+       Mindestens eine Ressource ist nicht teilbar - nur ein Thread
+       kann sie zur gleichen Zeit halten.
+       -> Hier erfüllt: jeder Mutex erlaubt nur einen Halter.
+
+  2. Hold and Wait (Halten und Warten)
+       Ein Thread hält schon eine Ressource und fordert weitere an.
+       -> Hier erfüllt: T1 hält z.B. R1 und will R2 dazu.
+
+  3. No Preemption (kein Entzug)
+       Eine Ressource kann dem Thread nicht zwangsweise weggenommen
+       werden, sie muss freiwillig freigegeben werden.
+       -> Hier erfüllt: pthread_mutex_lock kann nicht von außen
+          unterbrochen werden, nur unlock gibt frei.
+
+  4. Circular Wait (zyklisches Warten)
+       Es gibt eine geschlossene Kette von wartenden Threads:
+       T_a wartet auf T_b, T_b auf T_c, ..., T_z auf T_a.
+       -> Im obigen Szenario: T1 -> T2 -> T3 -> T1.
+
+Sind alle vier erfüllt, KANN ein Deadlock entstehen. Um Deadlocks
+auszuschließen, reicht es, EINE der Bedingungen zu brechen.
+
+
+Was wir hier tun: Circular Wait verhindern
+===========================================
+
+Wir entscheiden eine totale Ordnung auf den Ressourcen:
+    R1 < R2 < R3 < R4 (also: aufsteigend nach Index)
+
+Jeder Thread sperrt seine Ressourcen STRENG in dieser Reihenfolge.
+In deadlock_analysis.c wird das durch sort_ascending() erreicht, was
+den shuffle() ersetzt.
+
+Beispiel mit der neuen Reihenfolge:
+
+    T1 sperrt zuerst R1, dann R2, dann R3
+    T2 sperrt zuerst R3, dann R4
+    T3 sperrt zuerst R1, dann R4
+    T4 sperrt zuerst R1, dann R4
+
+Warum kein Deadlock mehr? Stell dir vor, T_a wartet auf eine Ressource
+R_x. Dann hält T_a nur Ressourcen mit Index < x. Wenn jetzt T_b auf
+eine Ressource warten würde, die T_a hält (Index y < x), dann würde
+T_b auf etwas mit kleinerem Index warten als das, was es gerade hält.
+Das widerspricht der "aufsteigenden" Regel. Damit kann es keinen
+Zyklus geben.
+
+Allgemein gesagt: in einem gerichteten Wartegraphen mit Kanten von
+"hält" zu "wartet auf" zeigt jede Kante immer in Richtung höherer
+Indizes -> der Graph ist azyklisch -> Deadlock unmöglich.
+
+
+Andere Strategien
+==================
+
+a) try_lock + Backoff
+   Statt pthread_mutex_lock benutzt man pthread_mutex_trylock. Wenn
+   eine Ressource gerade nicht verfügbar ist, gibt der Thread alle
+   bisher gehaltenen Locks wieder frei, wartet kurz, und versucht es
+   erneut. Bricht "Hold and Wait" auf.
+
+   Nachteil: Livelock möglich (Threads geben sich gegenseitig immer
+   wieder ihre Locks zurück, ohne Fortschritt). Lässt sich mit
+   randomisiertem Backoff entschärfen.
+
+b) Globale Sperre
+   Ein einziger Mutex über alle Ressourcen. Garantiert keinen Deadlock,
+   aber serialisiert ALLES und macht Parallelität zunichte. Nur als
+   Notlösung sinnvoll.
+
+c) Banker's Algorithm
+   Vorab-Analyse, ob eine Lock-Anforderung in einen "sicheren" Zustand
+   führt. Sehr komplex, in der Praxis selten in dieser Form genutzt.
+
+d) Lock-freie Algorithmen
+   Atomic-Operationen (compare-and-swap usw.), keine Locks im Spiel.
+   Hat seine eigenen Tücken (ABA-Problem, Memory Ordering), aber
+   eliminiert Deadlocks per Konstruktion.
+
+In der Praxis ist Lock Ordering der mit Abstand häufigste Ansatz, weil
+er einfach umzusetzen und gut nachvollziehbar ist - genau das, was wir
+hier in deadlock_analysis.c gemacht haben.

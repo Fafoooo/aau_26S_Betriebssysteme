@@ -1,0 +1,73 @@
+Übung 7.4 - Laufzeitvergleich fork vs. Threads
+
+
+Aufruf
+=======
+
+  gcc -O2 -o forkmatrix forkmatrix.c
+  gcc -O2 -pthread -o threadmatrix threadmatrix.c
+  time ./forkmatrix
+  time ./threadmatrix
+
+
+time-Ausgabe
+=============
+
+  real - Wanduhr-Zeit (was du als User wartest)
+  user - CPU-Zeit im User-Space (Summe ueber alle Kerne)
+  sys  - CPU-Zeit im Kernel-Space
+
+
+Ergebnis
+=========
+
+  forkmatrix:   real ~ 30-200 ms
+  threadmatrix: real ~ 1-5 ms
+
+Speedup = T_fork / T_threads = ca. 20-100x.
+
+
+Warum ist fork() so viel langsamer?
+====================================
+
+fork() muss pro Kind:
+  - neue PID, neue Page-Tables, FD-Tabelle kopieren
+  - alles im Kernel verbuchen, dann Context-Switch
+  -> hunderte Mikrosekunden PRO fork(). Bei N=100 -> 10-50 ms allein
+     fuer die Erzeugung.
+
+pthread_create() macht nur:
+  - neuen Stack + Eintrag in der Thread-Tabelle
+  -> wenige Mikrosekunden pro Thread.
+
+Die eigentliche Rechenarbeit (Summe ueber 100 Zahlen) ist winzig,
+also dominiert der Erzeugungs-Overhead. Bei deutlich groesserem N
+mit mehr Rechenarbeit pro Spalte gleichen sich beide Varianten an.
+
+
+ulimit beachten
+================
+
+Bei sehr grossem N kann fork() an die Prozess-Grenze stossen:
+
+  ulimit -u           # max. Userprozesse anzeigen
+  ulimit -u 8192      # erhoehen (nur in dieser Shell)
+
+Bei pthreads gibt's ein eigenes Limit (cat /proc/sys/kernel/threads-max),
+das ist aber typisch in den Zehntausenden -> bei N=100 kein Thema.
+
+
+Bonus: Stack vs. Heap
+======================
+
+  int matrix[N][N];           Stack. Schnell + cache-freundlich,
+                              aber Stack-Limit ~8 MB.
+  static int matrix[N][N];    Liegt im BSS, kein Stack-Limit. So machen
+                              wir es hier.
+  int **matrix = malloc(...)  Heap, jede Zeile einzeln. Langsamer wegen
+   + zeile = malloc(...)      doppelter Indirektion + verteilter Pages.
+  int *flat = malloc(N*N*..)  Heap, ein Block. Genauso schnell wie Stack,
+   flat[row*N + col]          beliebig gross. Standardloesung.
+
+Bei kleinem N kaum Unterschied. Bei N=2000+ ist "verteilter Heap" 2-3x
+langsamer als "ein Block" wegen Cache-Misses.
