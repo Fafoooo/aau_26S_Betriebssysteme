@@ -1,0 +1,74 @@
+Übung 6.1 - Theoretische Fragen
+
+
+Frage 1: Warum keine 256-Kern-CPUs?
+====================================
+
+Hardware-seitig:
+  - Speicherbandbreite. Alle Kerne teilen sich L3-Cache und
+    Memory-Bus. Mehr Kerne -> Wettkampf um dieselbe Bandbreite.
+  - Cache-Kohärenz. Pro Kern muss sichergestellt sein, dass alle
+    denselben Speicher-Stand sehen. Das Protokoll (z.B. MESI) wird
+    quadratisch teurer mit der Kernzahl.
+  - Hitze + Strom. 256 Kerne auf einem Die produzieren mehr Watt
+    als realistisch gekühlt werden kann.
+  - Die-Fläche. Mehr Kerne pro Chip = größerer Die = mehr Defekte
+    = schlechtere Yield-Rate in der Fertigung.
+
+Software-seitig:
+  - Amdahl's Law. Bei jeder Software gibt es einen seriellen Anteil,
+    der nicht parallelisiert werden kann. Schon 5% seriell
+    begrenzen den maximalen Speedup auf 20x, egal wie viele Kerne.
+  - Die meisten Programme sind nicht massiv parallel. Office,
+    Browser, Compiler, IDEs nutzen typisch <8 Kerne effektiv.
+  - Synchronisation. Mit mehr Threads steigt die Wahrscheinlichkeit
+    von Locks, Race Conditions, False Sharing. Schon mit 32 Kernen
+    sind klassische Mutex-Patterns schwer korrekt zu schreiben.
+
+Konsequenz: Mehr Kerne lohnen sich erst, wenn die Software wirklich
+"embarrassingly parallel" ist (Rendering, ML-Training, Crypto).
+Für Allzweck-Code begrenzt die Software-Skalierbarkeit.
+
+
+Frage 2: GPU-Paradigma in der CPU?
+===================================
+
+GPUs (z.B. Nvidia H100) haben tausende einfache Kerne, die das
+SIMT-Modell nutzen: alle Kerne in einer Gruppe (Warp) führen
+gleichzeitig DIESELBE Instruktion aus, nur auf unterschiedlichen
+Daten.
+
+Würde man CPUs so bauen, gäbe es folgende Probleme:
+
+1. Allzweck-Code hat Verzweigungen.
+   if/else, Schleifen mit unterschiedlichen Bedingungen pro Thread.
+   GPUs führen beide Zweige seriell aus und maskieren weg, was
+   nicht passt - das halbiert effektiv die Leistung. Bei klassischer
+   CPU-Software wäre das katastrophal.
+
+2. Latenz vs. Durchsatz.
+   CPUs sind latenz-optimiert (große Caches, Out-of-Order Execution,
+   Branch Prediction), GPUs sind durchsatz-optimiert (viele kleine
+   einfache Kerne, hohe Speicherbandbreite). Eine Tastatureingabe
+   schnell beantworten kann nur ein latenz-optimierter Kern.
+
+3. Programmiermodell.
+   GPU-Code wird in CUDA / OpenCL geschrieben - extrem anders als
+   normale Threads. Das gesamte Software-Ökosystem (OS, Bibliotheken,
+   Compiler, Sprachen) müsste umgeschrieben werden.
+
+4. Speichermodell.
+   GPUs haben separates VRAM und explizites Memcopy zwischen Host
+   und Device. Klassische OS- und IPC-Konzepte (Pipes, fork(), etc.)
+   passen nicht zu diesem Modell.
+
+5. Synchronisation.
+   Klassische Locks und Condition-Variables skalieren nicht auf
+   tausende Kerne. Man bräuchte komplett andere Synchronisations-
+   Primitive (Barriers, Atomics) und müsste Software dafür neu
+   denken.
+
+Praktische Konsequenz: Hybrid-Ansatz. CPUs übernehmen Allzweck-Code
+und Steuerung, GPUs (oder spezialisierte Beschleuniger wie TPUs,
+NPUs) übernehmen massiv-parallele Workloads. Genau das sehen wir
+heute in jedem PC und Smartphone.

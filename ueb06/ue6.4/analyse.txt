@@ -1,0 +1,58 @@
+Ue 6.4 - Named Pipes: Tests und Verhalten
+
+
+1. Programm sendet Daten an sich selbst
+=======================================
+
+Kompilieren:
+
+  gcc -o namedpipe namedpipe.c
+
+Start:
+
+  ./namedpipe
+
+Beobachtung:
+
+  [Client] hat gesendet: "Hello server, das ist die Nachricht vom Client!"
+  [Server] hat empfangen: "Hello server, das ist die Nachricht vom Client!"
+
+Im Programm legt der Elternprozess zuerst /tmp/myfifo mit mkfifo() an.
+Nach fork() oeffnet das Kind die FIFO schreibend, der Elternprozess
+oeffnet sie lesend. Dadurch funktioniert der Datenaustausch innerhalb
+derselben Anwendung.
+
+
+2. Zweite Instanz
+=================
+
+Wenn zwei Instanzen gleichzeitig mit demselben FIFO-Pfad /tmp/myfifo
+laufen, teilen sie sich denselben Kommunikationskanal.
+
+Moegliche Probleme:
+
+  - Eine Nachricht kann vom "falschen" Serverprozess gelesen werden.
+  - Eine Instanz kann blockieren, wenn kein passender Leser oder Schreiber
+    offen ist.
+  - Eine Instanz kann die FIFO mit unlink() entfernen, waehrend die andere
+    Instanz noch damit arbeiten moechte.
+
+Das Grundproblem ist also der statische Name. Fuer mehrere Server waere
+ein eigenes Protokoll noetig, z.B. eindeutige FIFO-Namen pro Client oder
+ein zentraler Serverprozess, der dauerhaft laeuft.
+
+
+3. Server und Client getrennt
+=============================
+
+Bei getrennten Programmen muss man Startreihenfolge und Aufraeumen selbst
+regeln:
+
+  - Der Server muss laufen und die FIFO anlegen, bevor ein Client sinnvoll
+    senden kann.
+  - open(O_WRONLY) blockiert, solange kein Leser offen ist.
+  - open(O_RDONLY) blockiert, solange kein Schreiber offen ist.
+  - Nach einem Absturz bleibt /tmp/myfifo eventuell im Dateisystem liegen.
+
+Der Vorteil getrennter Programme ist, dass unverwandte Prozesse
+kommunizieren koennen. Der Nachteil ist mehr Koordination.

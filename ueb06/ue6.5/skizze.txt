@@ -1,0 +1,57 @@
+Ue 6.5 - Aufbau und Kommunikationsfluss
+
+
+Aufruf:
+
+  ./myduppipe "A mit Parametern" "B mit Parametern"
+
+
+Prozessstruktur:
+
+  Elternprozess
+    |
+    +-- Kind 1: fuehrt Kommando A aus
+    |
+    +-- Kind 2: fuehrt Kommando B aus
+
+
+Pipe:
+
+  thePipe[READ]   = Lese-Ende
+  thePipe[WRITE]  = Schreib-Ende
+
+
+Umleitung:
+
+  Kind 1:
+    dup2(thePipe[WRITE], STDOUT_FILENO)
+
+    Alles, was Kommando A normal auf stdout schreiben wuerde, landet
+    dadurch im Schreib-Ende der Pipe.
+
+  Kind 2:
+    dup2(thePipe[READ], STDIN_FILENO)
+
+    Kommando B liest dadurch nicht mehr von der Tastatur, sondern vom
+    Lese-Ende der Pipe.
+
+
+Kommunikationsfluss:
+
+  Kommando A  --stdout-->  Pipe  --stdin-->  Kommando B
+
+
+Beispiel:
+
+  ./myduppipe "ls -al" "sort -r"
+
+ist damit aequivalent zu:
+
+  ls -al | sort -r
+
+
+Wichtig:
+
+Der Elternprozess schliesst beide Pipe-Enden. Sonst koennte das zweite
+Kind beim Lesen blockieren, weil noch ein Schreib-Ende offen ist und
+read() deshalb kein EOF bekommt.

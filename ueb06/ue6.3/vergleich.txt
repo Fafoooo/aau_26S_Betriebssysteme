@@ -1,0 +1,89 @@
+Übung 6.3 - Datei vs. Shared Memory
+
+
+Performance messen
+===================
+
+  gcc -O2 -o abwechselnd        ../ue6.2/abwechselnd.c
+  gcc -O2 -o abwechselnd_shared abwechselnd_shared.c
+
+  time ./abwechselnd
+  time ./abwechselnd_shared
+
+Da ein einzelner Lauf mit nur 5 Iterationen zu kurz ist, rundet time
+auf meinem Rechner beide Varianten auf real 0.00 Sekunden. Aussagekraeftiger
+ist ein grober Mehrfachlauf:
+
+  for i in {1..1000}; do ./abwechselnd >/dev/null; done
+    real 2.42
+
+  for i in {1..1000}; do ./abwechselnd_shared >/dev/null; done
+    real 1.71
+
+
+Erwartete Groessenordnung
+==========================
+
+  abwechselnd        (Datei):  einige Millisekunden
+  abwechselnd_shared (SHM):    deutlich unter 1 ms
+
+Shared Memory ist um Faktor 10-100x schneller, je nach Plattenart
+und Caching.
+
+
+Warum schneller?
+=================
+
+Datei-Variante:
+  - Jedes fopen + fread + fwrite geht durch den Kernel.
+  - Der Kernel macht Page-Cache-Verwaltung, eventuell Disk-I/O.
+  - Selbst wenn die Datei im Page-Cache liegt: Syscalls + Kopie
+    zwischen Kernel- und User-Buffer.
+  - 5 Iterationen x mehrere read/write Calls = viele Kontextwechsel.
+
+Shared-Memory-Variante:
+  - Nach shmat() ist der Speicher direkt im Adressraum gemappt.
+  - Lesen + Schreiben sind ganz normale Memory-Zugriffe, kein Syscall.
+  - Beide Prozesse sehen denselben physischen Speicher.
+
+
+Weitere Vorteile von Shared Memory
+====================================
+
+1. Direkte Datenstrukturen.
+   Du kannst Structs, Arrays, ganze Records direkt im Shared Memory
+   ablegen, ohne Serialisierung. Bei einer Datei muesstest du Daten
+   immer als Byte-Stream serialisieren und parsen.
+
+2. Keine Datei-Spuren.
+   data.txt liegt nach Crash eventuell halbfertig auf der Platte
+   herum. SHM ist nach dem Programm-Ende (mit IPC_RMID) sauber weg.
+
+3. Kein Datei-Lock-Problem.
+   Bei Datei-Sharing musst du dich um Atomicitaet kuemmern (fcntl
+   advisory locks, flock...). SHM hat kein File-Lock-Konzept; du
+   musst dich aber selbst um Synchronisation kuemmern (Pipes,
+   Semaphoren, Mutexe).
+
+4. Skaliert ueber mehrere Prozesse.
+   Das gleiche SHM-Segment kann von beliebig vielen Prozessen
+   gleichzeitig gemappt werden. Eine Datei muss von jedem Prozess
+   einzeln geoeffnet werden.
+
+
+Nachteile (zur Vollstaendigkeit)
+=================================
+
+  - Kein Persistierung. Strom weg = Daten weg. Datei bleibt erhalten.
+  - Eigene Synchronisation noetig (kein automatisches Locking).
+  - Aufraeumen vergessen -> Segment lebt im Kernel weiter (ipcs -m,
+    ipcrm -m).
+
+
+Fazit
+======
+
+Fuer schnellen, intensiven Datenaustausch zwischen Prozessen ist
+Shared Memory das Mittel der Wahl. Datei sinnvoll, wenn die Daten
+ohnehin persistiert werden sollen oder Zugriff auch durch nicht
+verwandte Prozesse / Tools (cat, awk...) moeglich sein soll.
