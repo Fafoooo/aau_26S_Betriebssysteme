@@ -18,8 +18,8 @@ Beobachtung:
   [Server] hat empfangen: "Hello server, das ist die Nachricht vom Client!"
 
 Im Programm legt der Elternprozess zuerst /tmp/myfifo mit mkfifo() an.
-Nach fork() oeffnet das Kind die FIFO schreibend, der Elternprozess
-oeffnet sie lesend. Dadurch funktioniert der Datenaustausch innerhalb
+Nach fork() öffnet das Kind die FIFO schreibend, der Elternprozess
+öffnet sie lesend. Dadurch funktioniert der Datenaustausch innerhalb
 derselben Anwendung.
 
 
@@ -29,23 +29,23 @@ derselben Anwendung.
 Wenn zwei Instanzen gleichzeitig mit demselben FIFO-Pfad /tmp/myfifo
 laufen, teilen sie sich denselben Kommunikationskanal.
 
-Moegliche Probleme:
+Mögliche Probleme:
 
   - Eine Nachricht kann vom "falschen" Serverprozess gelesen werden.
   - Eine Instanz kann blockieren, wenn kein passender Leser oder Schreiber
     offen ist.
-  - Eine Instanz kann die FIFO mit unlink() entfernen, waehrend die andere
+  - Eine Instanz kann die FIFO mit unlink() entfernen, während die andere
     Instanz noch damit arbeiten moechte.
 
-Das Grundproblem ist also der statische Name. Fuer mehrere Server waere
+Das Grundproblem ist also der statische Name. Für mehrere Server waere
 ein eigenes Protokoll noetig, z.B. eindeutige FIFO-Namen pro Client oder
-ein zentraler Serverprozess, der dauerhaft laeuft.
+ein zentraler Serverprozess, der dauerhaft läuft.
 
 
 3. Server und Client getrennt
 =============================
 
-Bei getrennten Programmen muss man Startreihenfolge und Aufraeumen selbst
+Bei getrennten Programmen muss man Startreihenfolge und Aufräumen selbst
 regeln:
 
   - Der Server muss laufen und die FIFO anlegen, bevor ein Client sinnvoll
@@ -55,4 +55,4 @@ regeln:
   - Nach einem Absturz bleibt /tmp/myfifo eventuell im Dateisystem liegen.
 
 Der Vorteil getrennter Programme ist, dass unverwandte Prozesse
-kommunizieren koennen. Der Nachteil ist mehr Koordination.
+kommunizieren können. Der Nachteil ist mehr Koordination.

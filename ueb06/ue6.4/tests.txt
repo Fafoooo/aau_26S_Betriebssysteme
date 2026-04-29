@@ -1,0 +1,61 @@
+Übung 6.4 - Tests und Diskussion
+
+
+Test 1: An sich selbst senden
+==============================
+
+Dieselbe Anwendung enthaelt Server (Eltern) und Client (Kind).
+Programm starten:
+
+  ./namedpipe
+
+Erwartete Ausgabe:
+  [Client] hat gesendet: "Hello server, ..."
+  [Server] hat empfangen: "Hello server, ..."
+
+Funktioniert problemlos. Der Client blockiert beim open(O_WRONLY)
+bis der Server open(O_RDONLY) macht. Sobald beide Seiten offen
+sind, fliessen die Daten durch.
+
+
+Test 2: Zweite Instanz schickt an die erste
+============================================
+
+Erste Instanz starten -> Server wartet auf eine Nachricht.
+In zweitem Terminal eine zweite Instanz starten.
+
+Probleme, die auftreten:
+  1. Beide Instanzen versuchen mkfifo. Die zweite kriegt EEXIST,
+     was wir abfangen - die FIFO bleibt also bestehen.
+  2. Beide Instanzen haben einen eigenen Server UND einen eigenen
+     Client. Das heißt: vier Endpunkte auf derselben FIFO.
+  3. Wer kriegt welche Nachricht? FIFOs liefern Bytes, nicht
+     "Nachrichten an einen bestimmten Empfänger". Welche Bytes
+     bei welchem read() landen, ist ein Race Condition.
+  4. Wenn Instanz 1 noch läuft und Instanz 2 die FIFO unlinkt
+     (im Aufräumen), bricht Instanz 1 zusammen.
+
+Effekt: Mit zwei Instanzen über dieselbe FIFO werden Nachrichten
+vermischt. Eine FIFO ist 1:1 für einen Schreiber + einen Leser
+gedacht.
+
+
+Test 3: Server und Client in getrennte Programme auslagern
+===========================================================
+
+Vorteil: Klare Trennung, jedes Programm für sich startbar.
+         Schön für echte Client-Server-Architekturen.
+
+Nachteile:
+  1. Wer startet zuerst? open(O_WRONLY) blockiert ohne Reader,
+     open(O_RDONLY) blockiert ohne Writer. Falsche Reihenfolge =
+     beide hängen.
+  2. Wer macht mkfifo? Wer macht unlink? Eindeutig zuweisen, sonst
+     bleibt die FIFO nach Crash liegen.
+  3. Lifecycle. Wenn der Server crasht während Clients schreiben,
+     bekommen die SIGPIPE oder verlieren ihre Daten.
+  4. Mehrere Clients gleichzeitig: dieselben Race-Probleme wie in
+     Test 2. Echte Server brauchen pro Client eine eigene FIFO
+     oder einen Multiplexer (epoll, select).
+  5. Sicherheit / Berechtigungen. Beide Programme müssen sich auf
+     denselben Pfad und dieselben Permissions einigen.

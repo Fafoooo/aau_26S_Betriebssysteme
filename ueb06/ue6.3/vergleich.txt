@@ -21,7 +21,7 @@ ist ein grober Mehrfachlauf:
     real 1.71
 
 
-Erwartete Groessenordnung
+Erwartete Größenordnung
 ==========================
 
   abwechselnd        (Datei):  einige Millisekunden
@@ -52,7 +52,7 @@ Weitere Vorteile von Shared Memory
 
 1. Direkte Datenstrukturen.
    Du kannst Structs, Arrays, ganze Records direkt im Shared Memory
-   ablegen, ohne Serialisierung. Bei einer Datei muesstest du Daten
+   ablegen, ohne Serialisierung. Bei einer Datei müsstest du Daten
    immer als Byte-Stream serialisieren und parsen.
 
 2. Keine Datei-Spuren.
@@ -65,10 +65,10 @@ Weitere Vorteile von Shared Memory
    musst dich aber selbst um Synchronisation kuemmern (Pipes,
    Semaphoren, Mutexe).
 
-4. Skaliert ueber mehrere Prozesse.
+4. Skaliert über mehrere Prozesse.
    Das gleiche SHM-Segment kann von beliebig vielen Prozessen
    gleichzeitig gemappt werden. Eine Datei muss von jedem Prozess
-   einzeln geoeffnet werden.
+   einzeln geöffnet werden.
 
 
 Nachteile (zur Vollstaendigkeit)
@@ -76,14 +76,14 @@ Nachteile (zur Vollstaendigkeit)
 
   - Kein Persistierung. Strom weg = Daten weg. Datei bleibt erhalten.
   - Eigene Synchronisation noetig (kein automatisches Locking).
-  - Aufraeumen vergessen -> Segment lebt im Kernel weiter (ipcs -m,
+  - Aufräumen vergessen -> Segment lebt im Kernel weiter (ipcs -m,
     ipcrm -m).
 
 
 Fazit
 ======
 
-Fuer schnellen, intensiven Datenaustausch zwischen Prozessen ist
+Für schnellen, intensiven Datenaustausch zwischen Prozessen ist
 Shared Memory das Mittel der Wahl. Datei sinnvoll, wenn die Daten
 ohnehin persistiert werden sollen oder Zugriff auch durch nicht
-verwandte Prozesse / Tools (cat, awk...) moeglich sein soll.
+verwandte Prozesse / Tools (cat, awk...) möglich sein soll.

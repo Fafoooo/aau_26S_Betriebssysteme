@@ -1,14 +1,14 @@
 // Ü 6.4 - Named Pipe (FIFO) Client-Server
 //
 // Eine FIFO ist eine "named" Pipe - sie hat einen Pfad im Dateisystem
-// (hier /tmp/myfifo) und kann von voellig unverwandten Prozessen
+// (hier /tmp/myfifo) und kann von völlig unverwandten Prozessen
 // genutzt werden. Im Gegensatz zu anonymen Pipes muss kein gemeinsamer
 // Vorfahre existieren.
 //
 // Hier zur Demo: Server und Client als Eltern + Kind in einem Programm.
 //
 // Wichtig: open(O_WRONLY) und open(O_RDONLY) auf einer FIFO blockieren
-// beide, bis das jeweils andere Ende geoeffnet wird. Das ist der
+// beide, bis das jeweils andere Ende geöffnet wird. Das ist der
 // Sync-Mechanismus.
 //
 // Kompilieren:  gcc -o namedpipe namedpipe.c
@@ -16,8 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <errno.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -27,36 +27,30 @@
 int main(void)
 {
     // FIFO im Dateisystem anlegen. EEXIST = OK, war schon da.
-    if (mkfifo(FIFO_PATH, 0666) == -1 && errno != EEXIST) {
-        perror("mkfifo");
-        return EXIT_FAILURE;
+    if (mkfifo(FIFO_PATH, 0666) == -1 && errno != EEXIST) {  // FIFO erzeugen
+        perror("mkfifo");                                      // Fehler-Log
+        exit(EXIT_FAILURE);                                    // Abbruch
     }
 
-    if (fork() == 0) {
+    if (fork() == 0) {                                          // 0 = wir sind im Kind
         // === Client: schreibt ===
-        int fd = open(FIFO_PATH, O_WRONLY);
-        if (fd == -1) { perror("open client"); exit(EXIT_FAILURE); }
-
-        const char *msg = "Hello server, das ist die Nachricht vom Client!";
-        write(fd, msg, strlen(msg) + 1);
-        close(fd);
-        printf("[Client] hat gesendet: \"%s\"\n", msg);
-        exit(EXIT_SUCCESS);
+        int fd = open(FIFO_PATH, O_WRONLY);                     // FIFO zum Schreiben öffnen (blockt bis Server liest)
+        const char *msg = "Hello server, das ist die Nachricht vom Client!";  // Nachricht
+        write(fd, msg, strlen(msg) + 1);                        // Nachricht in FIFO schreiben
+        close(fd);                                              // FIFO schließen
+        printf("[Client] hat gesendet: \"%s\"\n", msg);         // Log
+        exit(EXIT_SUCCESS);                                     // Client beenden
     }
 
     // === Server: liest ===
-    int fd = open(FIFO_PATH, O_RDONLY);
-    if (fd == -1) { perror("open server"); return EXIT_FAILURE; }
+    int fd = open(FIFO_PATH, O_RDONLY);                         // FIFO zum Lesen öffnen (blockt bis Client schreibt)
+    char buf[256];                                              // Empfangs-Buffer
+    ssize_t n = read(fd, buf, sizeof(buf) - 1);                 // Nachricht aus FIFO lesen
+    buf[n] = 0;                                                 // Null-Terminator setzen
+    printf("[Server] hat empfangen: \"%s\"\n", buf);            // Log
+    close(fd);                                                  // FIFO schließen
 
-    char buf[256];
-    ssize_t n = read(fd, buf, sizeof(buf) - 1);
-    if (n == -1) { perror("read"); return EXIT_FAILURE; }
-
-    buf[n] = 0;
-    printf("[Server] hat empfangen: \"%s\"\n", buf);
-    close(fd);
-
-    wait(NULL);
-    unlink(FIFO_PATH);   // FIFO aus dem Dateisystem entfernen
+    wait(NULL);                                                 // auf Client warten (kein Zombie)
+    unlink(FIFO_PATH);                                          // FIFO aus Dateisystem entfernen
     return EXIT_SUCCESS;
 }
