@@ -1,0 +1,143 @@
+Ü 8.1 - Threads (Theorie)
+
+
+=== Was bedeutet "thread-safe"? ===
+
+Ein Code-Stück (Funktion, Datenstruktur, Klasse) ist thread-safe, wenn
+es ohne zusätzliche Absprache von mehreren Threads gleichzeitig benutzt
+werden kann, ohne dass das Verhalten dadurch fehlerhaft wird.
+
+Konkret heißt das:
+  - Keine Race Conditions auf geteilten Variablen.
+  - Geteilte Zustände bleiben konsistent (Invarianten halten).
+  - Das Ergebnis entspricht einer gültigen sequentiellen Ausführung.
+
+Typische Mittel, um Thread-Safety herzustellen:
+  - Mutex oder Semaphore zur Absicherung kritischer Abschnitte
+  - Atomare Operationen (z.B. aus <stdatomic.h>)
+  - Thread-Local Storage (eigene Kopie pro Thread)
+  - Read/Write-Locks, wenn meist gelesen und selten geschrieben wird
+  - Unveränderbare (immutable) Datenstrukturen
+
+
+=== Was bedeutet "reentrant"? ===
+
+Eine Funktion ist reentrant, wenn sie sicher unterbrochen und während
+der Unterbrechung erneut aufgerufen werden kann, ohne dass sich die
+beiden Aufrufe gegenseitig stören.
+
+Eigenschaften einer reentranten Funktion:
+  - kein globaler oder statischer Zustand
+  - sie ändert ihren eigenen Code nicht
+  - sie ruft selbst keine nicht-reentranten Funktionen auf
+
+Reentrant und thread-safe sind verwandt, aber nicht dasselbe:
+  - Eine reentrante Funktion ist automatisch thread-safe.
+  - Eine thread-safe Funktion (z.B. mit internem Mutex) ist nicht
+    automatisch reentrant. Wenn ein Signalhandler dieselbe Funktion
+    aufruft und der Mutex schon vom selben Thread gehalten wird,
+    entsteht ein Deadlock.
+
+Klassisches Beispiel:
+  - strtok()    NICHT reentrant (interner statischer Zustand)
+  - strtok_r()  reentrant (Zustand wird vom Aufrufer mitgegeben)
+
+
+=== Wie kann man Threads abbrechen (cancel)? ===
+
+1. Kooperativ über eine Flag-Variable
+
+   Der Thread prüft regelmäßig eine Variable wie "shutdown_requested"
+   und beendet sich selbst sauber.
+
+   Vorteil: volle Kontrolle, Ressourcen können sauber freigegeben werden.
+   Nachteil: der Thread muss die Prüfstelle auch tatsächlich erreichen.
+   In einem langen blockierenden Aufruf (z.B. read()) bringt das nichts.
+
+2. pthread_cancel()
+
+   Schickt eine Cancellation-Request an einen Thread. Der Thread wird
+   an einem "Cancellation Point" beendet (z.B. read, write, sleep,
+   pthread_cond_wait). Mit pthread_setcanceltype() kann zwischen
+     - PTHREAD_CANCEL_DEFERRED (nur an Cancellation Points, Standard)
+     - PTHREAD_CANCEL_ASYNCHRONOUS (jederzeit, riskant)
+   gewählt werden.
+
+   Vorteil: funktioniert auch in blockierenden Aufrufen.
+   Nachteil: wenn der Thread mitten in einem kritischen Abschnitt
+   abgebrochen wird, bleiben Mutexes gesperrt oder Speicher unverwertet.
+   Deshalb sollte man Cleanup-Handler mit pthread_cleanup_push
+   registrieren, die beim Abbruch automatisch aufgeräumt werden.
+
+3. Signal an den Thread (pthread_kill)
+
+   Mit pthread_kill() kann man ein Unix-Signal an einen bestimmten
+   Thread schicken. Über einen Signalhandler kann der Thread sich
+   beenden. In der Praxis selten, weil Signale und Threads heikel
+   zusammenspielen (siehe sigprocmask, async-signal-safe Funktionen).
+
+Empfehlung: wenn möglich kooperativ mit einer Flag-Variable, weil das
+am vorhersagbarsten ist. pthread_cancel nur, wenn es nicht anders geht,
+und immer mit Cleanup-Handlern absichern.
+
+
+=== Was sind Thread-Pools? ===
+
+Ein Thread-Pool ist eine feste Menge von vorab erzeugten Threads, die
+sich Aufgaben aus einer gemeinsamen Warteschlange holen. Statt für
+jede Aufgabe einen Thread zu erzeugen und wieder zu beenden, übernimmt
+ein freier Pool-Thread die Aufgabe und führt sie aus.
+
+Vorteile:
+  - Spart die Kosten von pthread_create und pthread_exit pro Aufgabe.
+  - Begrenzt die Anzahl gleichzeitig laufender Threads.
+  - Bessere Cache-Nutzung und weniger Druck auf den Scheduler.
+
+Typischer Einsatz: Webserver, Task-Queues, Worker-Patterns.
+
+
+=== Thread-Pool mit POSIX-Threads ===
+
+Grundbausteine:
+
+  - Eine Queue für anstehende Aufgaben (z.B. verkettete Liste oder
+    Ring-Buffer).
+  - Ein Mutex schützt die Queue.
+  - Eine Condition Variable signalisiert "neue Aufgabe verfügbar".
+  - Eine Shutdown-Flag, um den Pool sauber zu beenden.
+
+Ablauf in jedem Worker-Thread:
+
+   while (1) {
+       pthread_mutex_lock(&queue_mu);
+       while (queue_empty && !shutdown)
+           pthread_cond_wait(&queue_cv, &queue_mu);
+       if (shutdown && queue_empty) {
+           pthread_mutex_unlock(&queue_mu);
+           break;
+       }
+       task = queue_pop();
+       pthread_mutex_unlock(&queue_mu);
+
+       task->run();
+   }
+
+Aufgabe einfügen:
+
+   pthread_mutex_lock(&queue_mu);
+   queue_push(task);
+   pthread_cond_signal(&queue_cv);
+   pthread_mutex_unlock(&queue_mu);
+
+Pool beenden:
+
+   pthread_mutex_lock(&queue_mu);
+   shutdown = 1;
+   pthread_cond_broadcast(&queue_cv);
+   pthread_mutex_unlock(&queue_mu);
+   for (int i = 0; i < N; i++)
+       pthread_join(workers[i], NULL);
+
+POSIX selbst hat keine fertige Thread-Pool-API, aber die meisten
+größeren Projekte (OpenMP, Intel TBB, Glib, libuv) bringen eigene
+Implementierungen mit.
