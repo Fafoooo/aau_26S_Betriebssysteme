@@ -1,0 +1,114 @@
+Ü 9.2 - Threading: Performance Evaluation
+
+
+=== Aufgabe ===
+
+Gegeben ist teilsummen.c. Das Programm berechnet die Summe eines Arrays
+von Zufallszahlen mit mehreren Threads parallel. Drei Fragen sind zu
+beantworten:
+
+  1. Threadanzahl variieren und Berechnungszeit dokumentieren.
+  2. Beste Threadanzahl für 10000 Zufallszahlen?
+  3. Bei Verdoppelung der Daten und der Threads: gleiches Ergebnis?
+
+
+=== Ausführung ===
+
+NUM_THREADS bzw. NUM_COUNT im Code anpassen, neu kompilieren und
+mehrere Läufe pro Konfiguration machen.
+
+  gcc -O2 -pthread teilsummen.c -o teilsummen
+  ./teilsummen
+
+Tipp: clock() misst CPU-Zeit (Summe über alle Threads), nicht
+Wall-Clock-Zeit. Für eine faire Parallelitätsmessung wäre
+clock_gettime(CLOCK_MONOTONIC) aussagekräftiger.
+
+
+=== Wichtiger Punkt zum gegebenen Code ===
+
+Im Thread-Code wird der Schreibzugriff auf partial_sums[thread_id]
+mit einem Mutex geschützt:
+
+    pthread_mutex_lock(&mutex);
+    partial_sums[thread_id] += numbers[i];
+    pthread_mutex_unlock(&mutex);
+
+Das ist eigentlich unnötig, weil jeder Thread nur in seinen EIGENEN
+Index schreibt. Trotzdem konkurrieren alle Threads bei jeder Addition
+um genau einen Mutex. Das hat zwei Folgen:
+
+  - Die Threads laufen effektiv seriell statt parallel.
+  - Der Lock-Overhead ist bei nur 10000 Additionen größer als die
+    eigentliche Rechenarbeit.
+
+Das macht die folgenden Beobachtungen erst richtig verständlich.
+
+
+=== Frage 1: Threadanzahl variieren ===
+
+Bei 10000 Zufallszahlen mit dem gegebenen Code (Mutex pro Addition):
+
+  Threads | Erwartetes Verhalten
+  --------|------------------------------------------------------------
+     1    | Schnell. Kein Mutex-Kampf, fast keine Thread-Erzeugung.
+     2    | Ähnlich oder leicht langsamer durch Lock-Kontention.
+     4    | Spürbar schlechter, alle vier streiten um einen Mutex.
+    10    | Deutlich langsamer als 1 Thread.
+    50    | Noch schlechter, viel Thread-Overhead.
+   100+   | Klar schlechter, der Mutex wird zum Flaschenhals.
+
+Die konkreten Zahlen hängen vom System ab und müssen lokal mit
+mehreren Läufen gemessen werden.
+
+
+=== Frage 2: Beste Threadanzahl für 10000 Zahlen ===
+
+Mit diesem Code: 1 Thread.
+
+Begründung: Bei nur 10000 Additionen ist die eigentliche Arbeit so
+klein, dass sich Parallelität nicht lohnt. Thread-Erzeugung, Join
+und Mutex-Locking kosten zusammen mehr als die Additionen sparen.
+
+Wäre der unnötige Mutex entfernt (jeder Thread schreibt nur seinen
+eigenen Index, keine Kollision möglich), würde 2-4 Threads je nach
+CPU-Kernen einen leichten Vorteil bringen. Aber selbst dann bleibt
+der Speedup bescheiden, weil 10000 Werte einfach zu wenige sind.
+
+Faustregel: Parallelität lohnt sich erst, wenn die Arbeit pro Thread
+deutlich größer ist als der Overhead.
+
+
+=== Frage 3: Verdoppelung von Daten UND Threads ===
+
+Nein, das Ergebnis bleibt nicht gleich. Speedup ist sublinear.
+
+Gründe:
+
+  - Thread-Overhead ist fix pro Thread. Mehr Threads = mehr
+    Erzeugungs- und Join-Kosten, unabhängig von der Datenmenge.
+  - Mutex-Kontention skaliert NICHT linear, sondern wird mit mehr
+    Threads überproportional schlechter.
+  - Cache-Effekte: Mehr Threads konkurrieren um Cache-Lines, das
+    kann zu False Sharing und Cache-Misses führen.
+  - Physische Begrenzung: Hat das System z.B. 8 Kerne, dann teilen
+    sich 16 Threads die Zeit per Context-Switching. Doppelt so
+    viele Threads bringen jenseits der Kerngrenze keinen Vorteil
+    mehr, nur zusätzliche Wechselkosten.
+
+Faustregel: Die ideale Threadanzahl ist typischerweise ungefähr die
+Zahl der physischen Kerne, und auch nur dann, wenn die Datenmenge
+groß genug ist, um den Overhead zu amortisieren.
+
+
+=== Anmerkungen zum Messen ===
+
+  - clock() liefert CPU-Zeit. Bei mehreren Threads ist das die Summe
+    über alle Threads, nicht die Wall-Clock-Zeit. Aussagekräftiger:
+    clock_gettime(CLOCK_MONOTONIC) oder gettimeofday().
+  - Compiler-Optimierungen (-O0 vs -O2) verändern Ergebnisse stark.
+    Bei Vergleichen dieselbe Flag-Stufe verwenden.
+  - Pro Konfiguration mehrere Läufe (z.B. 10) machen und Median oder
+    Mittelwert nehmen, sonst sind Ausreißer zu auffällig.
+  - Hintergrundlast (Browser, IDE) abschalten oder zumindest stabil
+    halten, sonst sind die Werte nicht vergleichbar.

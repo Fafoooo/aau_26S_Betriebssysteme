@@ -1,0 +1,95 @@
+Ü 9.3 - Context Switching
+
+
+=== Was ist Context Switching? ===
+
+Context Switching bezeichnet den Vorgang, bei dem das Betriebssystem
+einen laufenden Prozess (oder Thread) anhält, dessen Zustand
+(Register, Programmzähler, Stack-Pointer, geöffnete Dateien etc.)
+sichert und einen anderen Prozess fortsetzt. So kann das OS mehr
+Prozesse verwalten, als physische CPU-Kerne vorhanden sind.
+
+Der Wechsel selbst kostet Zeit (typisch ein paar Mikrosekunden) und
+führt zu Cache-Effekten: Der vorherige Inhalt der CPU-Caches passt
+nicht mehr zum neuen Prozess, also gibt es Cache-Misses, bis sich
+der neue Prozess wieder "eingespielt" hat.
+
+
+=== Ist Context Switching immer nachteilig? ===
+
+Nein, es hängt stark von der Anwendung ab.
+
+1. Datenbank
+   Vorteilhaft. Eine DB hat viele parallele Anfragen, die meist auf
+   I/O warten (Disk, Netzwerk). Während ein Thread auf Disk wartet,
+   kann das OS einen anderen Thread auf der CPU laufen lassen. Ohne
+   Context Switching wäre die CPU die meiste Zeit idle.
+
+2. Browser
+   Vorteilhaft. Viele Tabs, Plugins, Netzwerk-Calls und GUI-Events
+   laufen gleichzeitig. Context Switching erlaubt es, all das
+   parallel verfügbar zu halten, ohne dass eine langsame Seite den
+   gesamten Browser blockiert.
+
+3. Spiel
+   Eher nachteilig. Spiele laufen in einer engen Frame-Schleife
+   (60 fps = 16,6 ms pro Frame). Jeder unfreiwillige Context Switch
+   unterbricht diese Schleife und kann zu Stutter, Frame-Drops oder
+   Input-Lag führen. Spiele wollen idealerweise einen ganzen CPU-Kern
+   exklusiv für sich.
+
+Generell: Bei I/O-lastigen oder reaktiven Anwendungen ist Context
+Switching ein Vorteil. Bei CPU-lastigen, latenz- oder echtzeit-
+kritischen Anwendungen ist es eher ein Nachteil.
+
+
+=== Context Switches unter Linux messen ===
+
+Es gibt mehrere Möglichkeiten:
+
+1. /proc/<PID>/status
+   Zeigt zwei Felder direkt aus dem Kernel:
+     voluntary_ctxt_switches      Prozess gibt CPU freiwillig ab (I/O-Wait)
+     nonvoluntary_ctxt_switches   Scheduler hat Prozess unterbrochen
+
+   Beispiel:
+     grep ctxt /proc/$$/status
+
+2. pidstat (aus dem sysstat-Paket)
+     pidstat -w -p <PID> 1
+   Zeigt voluntary und involuntary switches pro Sekunde.
+
+3. perf stat
+     perf stat -e context-switches,cpu-migrations ./mein_programm
+   Sehr genau, misst auch Cache-Misses und vieles mehr.
+
+4. /usr/bin/time -v
+     /usr/bin/time -v ./mein_programm
+   Druckt am Ende eine Zusammenfassung mit den Feldern
+   "Voluntary context switches" und "Involuntary context switches".
+
+
+=== Test mit zwei Programmen ===
+
+Beispiel A: teilsummen aus 9.2 (CPU-lastig, wenig Warten)
+
+     /usr/bin/time -v ./teilsummen
+
+   Erwartung: Relativ WENIGE Context Switches. Das Programm rechnet
+   die ganze Zeit und gibt die CPU nicht freiwillig ab. Voluntary
+   Switches sind nahe 0. Involuntary Switches treten nur auf, wenn
+   der Scheduler den Prozess zugunsten anderer Prozesse unterbricht.
+
+
+Beispiel B: bus aus 8.4 (I/O-lastig, viele wartende Threads)
+
+     /usr/bin/time -v ./bus
+
+   Erwartung: Deutlich MEHR Context Switches. Jeder Passagier-Thread
+   wartet ständig in pthread_cond_wait, das sind voluntary switches.
+   Auch der Bus selbst macht usleep, ebenfalls voluntary. Mit 26
+   Passagier-Threads und mehreren Pendelfahrten kommen schnell viele
+   Tausend Switches zusammen.
+
+Generell: Programme mit vielen Threads und viel Warten verursachen
+deutlich mehr Context Switches als reine Rechenprogramme.
