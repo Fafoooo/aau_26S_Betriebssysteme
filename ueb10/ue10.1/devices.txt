@@ -1,0 +1,87 @@
+Ü 10.1 - Geräte (devices) in Linux
+
+
+=== 1) Was ist eine Gerätedatei? ===
+
+Eine Gerätedatei ist eine spezielle Datei (meist unter /dev), die ein
+Hardware-Gerät oder ein virtuelles Gerät repräsentiert. Programme im
+User-Space können darüber mit den normalen Dateioperationen (open, read,
+write, close) auf das Gerät zugreifen. Der Kernel leitet diese
+Operationen über den zuständigen Treiber an das Gerät weiter.
+
+So kann man z.B. von /dev/random lesen wie aus einer Datei, obwohl
+dahinter kein Dateiinhalt, sondern ein Zufallszahlengenerator steckt.
+
+
+=== 2) Alle Gerätedateien auflisten ===
+
+   ls -l /dev
+
+Den Typ erkennt man am ersten Zeichen der Rechte-Spalte:
+   c...   Character-Device
+   b...   Block-Device
+
+Nur Geräte anzeigen (keine normalen Dateien):
+   ls -l /dev | grep '^[cb]'
+
+
+=== 3) Unterschied Character- vs. Block-Devices ===
+
+Character-Device:
+   - Daten werden als Byte-Strom gelesen/geschrieben, sequentiell.
+   - Keine feste Blockgröße, in der Regel ungepuffert.
+   - Beispiele: Tastatur, serielle Schnittstelle, /dev/random, /dev/null
+
+Block-Device:
+   - Daten werden in Blöcken fester Größe gelesen/geschrieben.
+   - Wahlfreier Zugriff möglich, vom Kernel gepuffert (Cache).
+   - Beispiele: Festplatten (/dev/sda), SSDs, USB-Sticks, Partitionen
+
+
+=== 4) Anzahl Character- bzw. Block-Devices ===
+
+   # Anzahl Character-Devices
+   ls -l /dev | grep '^c' | wc -l
+
+   # Anzahl Block-Devices
+   ls -l /dev | grep '^b' | wc -l
+
+Die konkreten Zahlen hängen vom System ab (typisch einige Hundert
+Character-Devices und ein paar Dutzend Block-Devices). Auf dem eigenen
+Rechner mit den beiden Befehlen oben bestimmen.
+
+
+=== 5) Major- und Minor-Nummern ===
+
+Jede Gerätedatei hat zwei Nummern:
+
+   Major-Nummer:  identifiziert den Treiber, der für das Gerät zuständig
+                  ist. Geräte desselben Typs teilen sich meist eine
+                  Major-Nummer.
+   Minor-Nummer:  identifiziert das konkrete Gerät (die Instanz)
+                  innerhalb dieses Treibers.
+
+Der Kernel nutzt die Major-Nummer, um eine Operation an den richtigen
+Treiber zu leiten. Der Treiber nutzt die Minor-Nummer, um das genaue
+Gerät auszuwählen (z.B. erste vs. zweite Festplatte).
+
+Bei ls -l stehen bei Gerätedateien statt der Dateigröße zwei Zahlen,
+z.B. "1, 3" -> Major 1, Minor 3.
+
+
+=== 6) /dev/random und /dev/null ===
+
+   ls -l /dev/random /dev/null
+
+Typische Ausgabe auf Standard-Linux:
+
+   crw-rw-rw- 1 root root 1, 8 ... /dev/random
+   crw-rw-rw- 1 root root 1, 3 ... /dev/null
+
+   /dev/null    -> Major 1, Minor 3
+   /dev/random  -> Major 1, Minor 8
+
+Das erste Zeichen ist jeweils 'c', also sind beide CHARACTER-Devices.
+Major 1 gehört zum "mem"-Treiber, der mehrere virtuelle Speicher-Geräte
+bereitstellt (dazu zählen auch /dev/zero mit Minor 5 und /dev/urandom
+mit Minor 9).

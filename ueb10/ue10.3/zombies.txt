@@ -1,0 +1,55 @@
+Ü 10.3 - Zombie-Prozesse
+
+
+=== Was ist ein Zombie-Prozess? ===
+
+Ein Zombie ist ein Prozess, der sich bereits beendet hat (exit), dessen
+Eltern-Prozess den Exit-Status aber noch nicht mit wait()/waitpid()
+abgeholt hat.
+
+Der Prozess ist tot, aber sein Eintrag in der Prozesstabelle bleibt
+erhalten, damit der Elternprozess später noch den Exit-Status auslesen
+kann. Ein Zombie belegt fast keine Ressourcen mehr (kein Speicher, keine
+CPU), nur noch den Tabelleneintrag mit PID und Exit-Status.
+
+
+=== Wie entstehen Zombies? ===
+
+Ein Kind beendet sich, bevor der Elternprozess wait() aufruft. Solange
+der Elternprozess den Status nicht abholt, bleibt das Kind ein Zombie.
+
+Typische Ursachen:
+   - Der Elternprozess ist mit anderer Arbeit beschäftigt.
+   - Der Elternprozess ruft wait() gar nicht auf (Programmierfehler).
+
+Aufgelöst wird ein Zombie, sobald der Elternprozess wait() aufruft
+("reaping"). Stirbt der Elternprozess vorher, wird der Zombie von init
+(PID 1) adoptiert, das regelmäßig wait() aufruft und ihn entfernt.
+
+
+=== Kennzeichnung im struct task_struct ===
+
+Im Kernel hat jeder Prozess ein struct task_struct. Der Zustand steht
+in den Feldern "state" und "exit_state".
+
+Ein Zombie ist daran erkennbar, dass
+
+   task->exit_state == EXIT_ZOMBIE
+
+gesetzt ist (Wert definiert in include/linux/sched.h). Sobald der
+Elternprozess den Status abgeholt hat, wechselt der Prozess nach
+EXIT_DEAD und der Eintrag wird freigegeben.
+
+In der Ausgabe von ps erscheinen Zombies mit dem Status "Z", oft mit
+dem Zusatz "<defunct>".
+
+
+=== create_zombie.c testen ===
+
+Das Programm forkt ein Kind, das sich sofort beendet. Der Elternprozess
+ruft absichtlich kein wait() auf und läuft 5 Minuten weiter. In dieser
+Zeit ist das Kind ein Zombie.
+
+   gcc create_zombie.c -o create_zombie
+   ./create_zombie &
+   ps aux | grep 'Z'          # Zombie sichtbar (Status Z, <defunct>)
